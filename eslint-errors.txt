@@ -1,0 +1,434 @@
+[
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\src\\components\\disease-finder\\BookingModal.tsx",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 55,
+        "column": 21,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 55,
+        "endColumn": 24,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                1684,
+                1687
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                1684,
+                1687
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\src\\components\\disease-finder\\SpecialistDirectory.tsx",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 11,
+        "column": 50,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 11,
+        "endColumn": 53,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                577,
+                580
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                577,
+                580
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      },
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 11,
+        "column": 68,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 11,
+        "endColumn": 71,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                595,
+                598
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                595,
+                598
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      },
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 78,
+        "column": 56,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 78,
+        "endColumn": 59,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                6774,
+                6777
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                6774,
+                6777
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      },
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 99,
+        "column": 42,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 99,
+        "endColumn": 45,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                7670,
+                7673
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                7670,
+                7673
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      },
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 179,
+        "column": 95,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 179,
+        "endColumn": 98,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                11643,
+                11646
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                11643,
+                11646
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\src\\components\\ui\\command.tsx",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-empty-object-type",
+        "severity": 2,
+        "message": "An interface declaring no members is equivalent to its supertype.",
+        "line": 24,
+        "column": 11,
+        "nodeType": "Identifier",
+        "messageId": "noEmptyInterfaceWithSuper",
+        "endLine": 24,
+        "endColumn": 29,
+        "suggestions": [
+          {
+            "messageId": "replaceEmptyInterfaceWithSuper",
+            "fix": {
+              "range": [
+                710,
+                761
+              ],
+              "text": "type CommandDialogProps = DialogProps"
+            },
+            "desc": "Replace empty interface with a type alias."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\src\\components\\ui\\textarea.tsx",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-empty-object-type",
+        "severity": 2,
+        "message": "An interface declaring no members is equivalent to its supertype.",
+        "line": 5,
+        "column": 18,
+        "nodeType": "Identifier",
+        "messageId": "noEmptyInterfaceWithSuper",
+        "endLine": 5,
+        "endColumn": 31,
+        "suggestions": [
+          {
+            "messageId": "replaceEmptyInterfaceWithSuper",
+            "fix": {
+              "range": [
+                75,
+                159
+              ],
+              "text": "type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>"
+            },
+            "desc": "Replace empty interface with a type alias."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\src\\pages\\Auth.tsx",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 130,
+        "column": 78,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 130,
+        "endColumn": 81,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                4334,
+                4337
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                4334,
+                4337
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\src\\pages\\Chat.tsx",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 110,
+        "column": 21,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 110,
+        "endColumn": 24,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                3473,
+                3476
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                3473,
+                3476
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\supabase\\functions\\chat\\index.ts",
+    "errors": [
+      {
+        "ruleId": "prefer-const",
+        "severity": 2,
+        "message": "'contents' is never reassigned. Use 'const' instead.",
+        "line": 41,
+        "column": 9,
+        "nodeType": "Identifier",
+        "messageId": "useConst",
+        "endLine": 41,
+        "endColumn": 24,
+        "fix": {
+          "range": [
+            1762,
+            2035
+          ],
+          "text": "const contents: any[] = [\n      { role: 'user', parts: [{ text: systemContext }] },\n      { role: 'model', parts: [{ text: 'I understand. I am MedGuide AI, ready to help with healthcare questions while always being clear about my limitations as an AI assistant.' }] },\n    ];"
+        }
+      },
+      {
+        "ruleId": "@typescript-eslint/no-explicit-any",
+        "severity": 2,
+        "message": "Unexpected any. Specify a different type.",
+        "line": 41,
+        "column": 19,
+        "nodeType": "TSAnyKeyword",
+        "messageId": "unexpectedAny",
+        "endLine": 41,
+        "endColumn": 22,
+        "suggestions": [
+          {
+            "messageId": "suggestUnknown",
+            "fix": {
+              "range": [
+                1776,
+                1779
+              ],
+              "text": "unknown"
+            },
+            "desc": "Use `unknown` instead, this will force you to explicitly, and safely assert the type is correct."
+          },
+          {
+            "messageId": "suggestNever",
+            "fix": {
+              "range": [
+                1776,
+                1779
+              ],
+              "text": "never"
+            },
+            "desc": "Use `never` instead, this is useful when instantiating generic type parameters that you don't need to know the type of."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "D:\\medguide-ai-assistant-main\\medguide-ai-assistant-main\\tailwind.config.ts",
+    "errors": [
+      {
+        "ruleId": "@typescript-eslint/no-require-imports",
+        "severity": 2,
+        "message": "A `require()` style import is forbidden.",
+        "line": 130,
+        "column": 13,
+        "nodeType": "CallExpression",
+        "messageId": "noRequireImports",
+        "endLine": 130,
+        "endColumn": 43
+      }
+    ]
+  }
+]

@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MedGuide AI Design System - Warm Earth Tones */
+
+@layer base {
+  :root {
+    /* Core Colors - Olive Green Palette with Adjacent Harmonies */
+    --background: 75 22% 93%;
+    --foreground: 95 28% 16%;
+    
+    /* Bottom Navigation */
+    --nav-bg: 78 25% 98%;
+    --nav-foreground: 95 22% 28%;
+    --nav-active: 82 50% 38%;
+    --card: 78 28% 97%;
+    --card-foreground: 95 28% 16%;
+
+    --popover: 78 28% 97%;
+    --popover-foreground: 95 28% 16%;
+
+    /* Primary - Deep Olive */
+    --primary: 95 32% 20%;
+    --primary-foreground: 78 28% 97%;
+    --primary-light: 88 28% 36%;
+    --primary-dark: 95 32% 14%;
+
+    /* Secondary - Sage Mist (yellow-green adjacent) */
+    --secondary: 68 18% 88%;
+    --secondary-foreground: 95 28% 20%;
+
+    /* Muted - Olive Grays */
+    --muted: 72 8% 83%;
+    --muted-foreground: 78 8% 38%;
+
+    /* Accent - Teal-Green (blue-green adjacent) */
+    --accent: 162 38% 40%;
+    --accent-foreground: 78 28% 97%;
+
+    /* Alert - Rose */
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 78 28% 97%;
+    --alert: 0 65% 50%;
+    --alert-light: 0 50% 95%;
+
+    /* Warning - Warm Chartreuse (yellow-green adjacent) */
+    --warning: 52 55% 42%;
+    --warning-foreground: 78 28% 97%;
+    --warning-light: 52 45% 92%;
+
+    /* Success - Forest Green */
+    --success: 145 42% 33%;
+    --success-foreground: 78 28% 97%;
+    --success-light: 145 38% 92%;
+
+    /* Info - Teal (blue-green adjacent) */
+    --info: 175 38% 38%;
+    --info-foreground: 78 28% 97%;
+    --info-light: 175 35% 92%;
+
+    --border: 75 12% 83%;
+    --input: 75 12% 83%;
+    --ring: 162 38% 40%;
+
+    --radius: 1rem;
+
+    /* Shadows - Olive toned */
+    --shadow-soft: 0 4px 20px -4px hsl(95 28% 16% / 0.06), 0 2px 8px -2px hsl(95 28% 16% / 0.04);
+    --shadow-medium: 0 8px 30px -8px hsl(95 28% 16% / 0.1), 0 4px 12px -4px hsl(95 28% 16% / 0.06);
+    --shadow-glow: 0 0 40px hsl(162 38% 40% / 0.15);
+
+    /* Glassmorphism */
+    --glass-bg: hsl(78 28% 97% / 0.85);
+    --glass-border: hsl(78 28% 97% / 0.6);
+  }
+
+  .dark {
+    --background: 95 18% 9%;
+    --foreground: 75 18% 94%;
+
+    --card: 95 18% 13%;
+    --card-foreground: 75 18% 94%;
+
+    --popover: 95 18% 13%;
+    --popover-foreground: 75 18% 94%;
+
+    --primary: 82 42% 52%;
+    --primary-foreground: 95 28% 10%;
+    --primary-light: 88 35% 48%;
+    --primary-dark: 82 42% 42%;
+
+    --secondary: 95 12% 17%;
+    --secondary-foreground: 75 18% 94%;
+
+    --muted: 95 12% 17%;
+    --muted-foreground: 75 10% 58%;
+
+    --accent: 162 32% 40%;
+    --accent-foreground: 78 28% 97%;
+
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 78 28% 97%;
+
+    --border: 95 12% 20%;
+    --input: 95 12% 20%;
+    --ring: 162 32% 40%;
+
+    --glass-bg: hsl(95 18% 9% / 0.85);
+    --glass-border: hsl(95 18% 18% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Lexend', sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(160deg, hsl(var(--background)) 0%, hsl(82 30% 88%) 50%, hsl(var(--accent) / 0.2) 100%);
+  }
+
+  .gradient-header {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--accent) / 0.12) 50%, hsl(162 38% 40% / 0.06) 100%);
+  }
+
+  .gradient-card-olive {
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(82 25% 92%) 100%);
+  }
+
+  .gradient-card-teal {
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(162 30% 92%) 100%);
+  }
+
+  .gradient-card-gold {
+    background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(52 35% 92%) 100%);
+  }
+
+  .gradient-section {
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(78 20% 89%) 100%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes confetti {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+  }
+
+  .animate-confetti {
+    animation: confetti 1s ease-out forwards;
+  }
+}
