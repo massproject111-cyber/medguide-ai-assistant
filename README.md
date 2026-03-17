@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏥 MedGuide AI
 
 **MedGuide AI** is a premium AI-powered healthcare assistance web application designed to help users make informed medical decisions.  
@@ -140,3 +141,6 @@ MedGuide AI demonstrates how AI can assist healthcare decision-making by combini
 ---
 
 **© 2026 – MedGuide AI**
+=======
+# Medguide
+>>>>>>> 3a7854f2dac1c4e27c012507f26ae2bfb762de85
