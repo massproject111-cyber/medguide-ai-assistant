@@ -1,4 +1,4 @@
-import { serve } from "std/http/server.ts";
+/// <reference path="../deno-types.d.ts" />
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +6,11 @@ const corsHeaders = {
 };
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+interface Medication {
+  name: string;
+  dosage: string;
+}
 
 interface ChatRequest {
   messages: { role: string; content: string }[];
@@ -21,11 +26,24 @@ interface ChatRequest {
     bloodType?: string;
     conditions?: string[];
     allergies?: string[];
-    medications?: any[];
+    medications?: Medication[];
   };
 }
 
-serve(async (req) => {
+interface GeminiPart {
+  text?: string;
+  inlineData?: {
+    mimeType: string;
+    data: string;
+  };
+}
+
+interface GeminiContent {
+  role: 'user' | 'model';
+  parts: GeminiPart[];
+}
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -39,7 +57,7 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    let systemContext = `You are MedGuide AI, a specialized Clinical Assistant. 
+    let personalityPrompt = `You are MedGuide AI, a specialized Clinical Assistant. 
     Your goal is to provide evidence-based healthcare guidance grounded in the user's personal health context.
     
     PERSONA PROTOCOLS:
@@ -51,23 +69,25 @@ serve(async (req) => {
     6. Always state that you are an AI assistant and not a doctor.`;
     
     if (userContext) {
-      const conditionsStr = userContext.conditions?.length ? userContext.conditions.join(', ') : 'none specified';
-      const allergiesStr = userContext.allergies?.length ? userContext.allergies.join(', ') : 'none specified';
-      const medsStr = userContext.medications?.length 
-        ? userContext.medications.map(m => `${m.name} (${m.dosage})`).join(', ') 
+      const { age, gender, bloodType, conditions, allergies, medications } = userContext;
+      const conditionsStr = conditions?.length ? conditions.join(', ') : 'none specified';
+      const allergiesStr = allergies?.length ? allergies.join(', ') : 'none specified';
+      const medsStr = medications?.length 
+        ? medications.map(m => `${m.name} (${m.dosage})`).join(', ') 
         : 'none specified';
 
-      systemContext += `\n\nUSER HEALTH PROFILE:
-      - Age: ${userContext.age || 'unknown'}
-      - Gender: ${userContext.gender || 'unknown'}
-      - Blood Type: ${userContext.bloodType || 'unknown'}
+      personalityPrompt += `\n\nUSER HEALTH PROFILE:
+      - Age: ${age || 'unknown'}
+      - Gender: ${gender || 'unknown'}
+      - Blood Type: ${bloodType || 'unknown'}
       - Chronic Conditions: ${conditionsStr}
       - Allergies: ${allergiesStr}
       - Current Medications: ${medsStr}`;
     }
 
-    const contents: { role: string; parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] }[] = [
-      { role: 'user', parts: [{ text: systemContext }] },
+    // Initialize conversation with personality and context
+    const contents: GeminiContent[] = [
+      { role: 'user', parts: [{ text: personalityPrompt }] },
       { role: 'model', parts: [{ text: 'I am MedGuide AI, your Clinical Assistant. I have internalized the user health profile and persona protocols. I will provide grounded, step-by-step clinical guidance for all subsequent interactions.' }] },
     ];
 
@@ -92,7 +112,10 @@ Return ONLY valid JSON in this exact format:
   "urgencyLevel": "low"
 }
 
-Provide top 2-3 most likely conditions with confidence percentages. Urgency levels: low, moderate, high, emergency.`
+- Use 'emergency' for any life-threatening symptoms (chest pain, stroke signs, severe difficulty breathing).
+- If urgency is 'emergency', the RECOMMENDATIONS must start with calling emergency services (e.g., 911 or local equivalent).
+- Use 'high' for conditions requiring urgent care within 24 hours.
+- Always err on the side of caution.`
         }]
       });
     } else if (action === 'interactions' && drug1 && drug2) {
@@ -151,7 +174,7 @@ Risk levels: low (no significant interaction), moderate (use with caution), high
 
     // Use streaming for chat, non-streaming for structured responses
     if (action === 'chat') {
-      const response = await fetch(`${GEMINI_API_URL}/gemini-1.5-flash:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`, {
+      const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +209,7 @@ Risk levels: low (no significant interaction), moderate (use with caution), high
       });
     } else {
       // Non-streaming for structured responses
-      const response = await fetch(`${GEMINI_API_URL}/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -8,11 +8,21 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const COMMON_SYMPTOMS = [
-  'Headache', 'Fever', 'Cough', 'Fatigue', 'Nausea',
-  'Sore throat', 'Body aches', 'Runny nose', 'Dizziness',
-  'Shortness of breath', 'Chest pain', 'Abdominal pain',
-  'Back pain', 'Joint pain', 'Skin rash', 'Insomnia'
-];
+  // General
+  'Fever', 'Fatigue', 'Chills', 'Night sweats', 'Weight loss', 'Body aches',
+  // Respiratory
+  'Cough', 'Shortness of breath', 'Chest pain', 'Sore throat', 'Runny nose', 'Congestion', 'Wheezing', 'Blue lips/face', 'Severe difficulty breathing',
+  // Digestive
+  'Nausea', 'Vomiting', 'Diarrhea', 'Constipation', 'Abdominal pain', 'Bloating', 'Heartburn', 'Severe stomach cramp', 'Blood in stool/vomit',
+  // Neurological
+  'Headache', 'Dizziness', 'Confusion', 'Numbness', 'Seizures', 'Memory loss', 'Slurred speech', 'Fainting', 'Sudden blindness', 'One-sided weakness',
+  // Musculoskeletal
+  'Back pain', 'Joint pain', 'Muscle weakness', 'Stiffness',
+  // Skin/Vision
+  'Skin rash', 'Itching', 'Blurred vision', 'Eye pain',
+  // Mental Health/Others
+  'Insomnia', 'Anxiety', 'Palpitations', 'Loss of appetite'
+].sort();
 
 const Symptoms = () => {
   const navigate = useNavigate();
@@ -226,18 +236,35 @@ const Symptoms = () => {
               />
             </div>
 
-            {/* Selected Count */}
+            {/* Selected Symptoms Chips */}
             {selectedSymptoms.size > 0 && (
-              <div className="flex items-center justify-between bg-primary/10 rounded-xl px-4 py-3">
-                <span className="text-sm font-medium text-primary">
-                  {selectedSymptoms.size} symptom{selectedSymptoms.size > 1 ? 's' : ''} selected
-                </span>
-                <button
-                  onClick={() => setSelectedSymptoms(new Set())}
-                  className="text-xs text-primary hover:underline"
-                >
-                  Clear all
-                </button>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-foreground">
+                    Selected Symptoms ({selectedSymptoms.size})
+                  </span>
+                  <button
+                    onClick={() => setSelectedSymptoms(new Set())}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[...selectedSymptoms].map(symptom => (
+                    <motion.button
+                      layout
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      key={symptom}
+                      onClick={() => toggleSymptom(symptom)}
+                      className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-xs font-medium text-primary flex items-center gap-1.5 hover:bg-primary/20 transition-colors"
+                    >
+                      {symptom}
+                      <Check className="w-3 h-3" />
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             )}
 
