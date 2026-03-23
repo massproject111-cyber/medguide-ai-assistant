@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Stethoscope, CheckCircle2, ArrowRight, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { DoctorBooking } from './DoctorBooking';
 
 export interface Condition {
   name: string;
