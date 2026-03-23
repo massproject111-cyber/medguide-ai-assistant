@@ -209,33 +209,23 @@ const Home = () => {
             icon={MapPin}
             label="Find Hospitals & Doctors"
             description="Browse our directory of specialists and facilities"
-            onClick={() => setShowDirectory(true)}
+            onClick={() => {
+              setSelectedSpecialty('General Physician');
+              setShowDirectory(true);
+            }}
             className="w-full"
           />
         </section>
 
-        {/* Health Tips */}
-        <section className="bg-gradient-to-br from-primary/10 via-accent/15 to-info/10 rounded-[2rem] p-6 border border-accent/20 shadow-soft">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 shadow-glow animate-float">
-              <Sparkles className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-display font-bold text-foreground">Daily Health Tip</h3>
-              <p className="text-xs font-medium text-muted-foreground leading-relaxed">
-                Stay hydrated! Aim for 8 glasses of water daily to support your medications' effectiveness.
-              </p>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Specialist Directory Modal */}
-      <SpecialistDirectory
-        isOpen={showDirectory}
-        onClose={() => setShowDirectory(false)}
-        initialSpecialty={selectedSpecialty}
-      />
+        {/* Inline Doctor Booking */}
+        {showDirectory && (
+          <section>
+            <DoctorBooking
+              specialist={selectedSpecialty || 'General Physician'}
+              onClose={() => setShowDirectory(false)}
+            />
+          </section>
+        )}
     </div>
   );
 };
