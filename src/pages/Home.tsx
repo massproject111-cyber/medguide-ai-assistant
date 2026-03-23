@@ -226,6 +226,7 @@ const Home = () => {
             />
           </section>
         )}
+      </main>
     </div>
   );
 };
