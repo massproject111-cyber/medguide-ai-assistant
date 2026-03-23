@@ -7,22 +7,7 @@ import { addLog } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-const COMMON_SYMPTOMS = [
-  // General
-  'Fever', 'Fatigue', 'Chills', 'Night sweats', 'Weight loss', 'Body aches',
-  // Respiratory
-  'Cough', 'Shortness of breath', 'Chest pain', 'Sore throat', 'Runny nose', 'Congestion', 'Wheezing', 'Blue lips/face', 'Severe difficulty breathing',
-  // Digestive
-  'Nausea', 'Vomiting', 'Diarrhea', 'Constipation', 'Abdominal pain', 'Bloating', 'Heartburn', 'Severe stomach cramp', 'Blood in stool/vomit',
-  // Neurological
-  'Headache', 'Dizziness', 'Confusion', 'Numbness', 'Seizures', 'Memory loss', 'Slurred speech', 'Fainting', 'Sudden blindness', 'One-sided weakness',
-  // Musculoskeletal
-  'Back pain', 'Joint pain', 'Muscle weakness', 'Stiffness',
-  // Skin/Vision
-  'Skin rash', 'Itching', 'Blurred vision', 'Eye pain',
-  // Mental Health/Others
-  'Insomnia', 'Anxiety', 'Palpitations', 'Loss of appetite'
-].sort();
+import { COMMON_SYMPTOMS } from '@/lib/constants';
 
 const Symptoms = () => {
   const navigate = useNavigate();
@@ -63,6 +48,7 @@ const Symptoms = () => {
       setResult(analysis);
       addLog('symptom_check', { symptoms: [...selectedSymptoms], result: analysis });
     } catch (error) {
+      console.error('Symptom analysis error:', error);
       toast.error('Failed to analyze symptoms. Please try again.');
     } finally {
       setIsAnalyzing(false);
@@ -152,39 +138,46 @@ const Symptoms = () => {
 
               {/* Conditions */}
               <div className="space-y-3">
-                {result.conditions.map((condition, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-card rounded-2xl p-4 shadow-card border border-border/50"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-display font-semibold text-foreground">{condition.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{condition.description}</p>
+                {result.conditions.length > 0 ? (
+                  result.conditions.map((condition, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="bg-card rounded-2xl p-4 shadow-card border border-border/50"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-display font-semibold text-foreground">{condition.name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{condition.description}</p>
+                        </div>
+                        <span className="text-2xl font-bold text-primary">{condition.confidence}%</span>
                       </div>
-                      <span className="text-2xl font-bold text-primary">{condition.confidence}%</span>
-                    </div>
-                    
-                    {/* Confidence Bar */}
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${condition.confidence}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${getConfidenceColor(condition.confidence)}`}
-                      />
-                    </div>
+                      
+                      {/* Confidence Bar */}
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${condition.confidence}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className={`h-full rounded-full ${getConfidenceColor(condition.confidence)}`}
+                        />
+                      </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Stethoscope className="w-4 h-4 text-primary" />
-                      <span className="text-muted-foreground">Recommended:</span>
-                      <span className="font-medium text-foreground">{condition.specialist}</span>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Stethoscope className="w-4 h-4 text-primary" />
+                        <span className="text-muted-foreground">Recommended:</span>
+                        <span className="font-medium text-foreground">{condition.specialist}</span>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="p-6 bg-card rounded-2xl border border-border/50 text-center">
+                    <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-20" />
+                    <p className="text-sm text-muted-foreground">No specific conditions identified. Consider adding more symptoms for a better analysis.</p>
+                  </div>
+                )}
               </div>
 
               {/* Recommendations */}
