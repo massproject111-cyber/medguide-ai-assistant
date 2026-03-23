@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Stethoscope, CheckCircle2, ArrowRight, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { DoctorBooking } from './DoctorBooking';
 
 export interface Condition {
   name: string;
@@ -56,8 +58,32 @@ const getConfidenceColor = (confidence: number) => {
 };
 
 export const AnalysisResults = ({ result, onFindSpecialist, onReset }: AnalysisResultsProps) => {
+  const [activeSpecialist, setActiveSpecialist] = useState<string | null>(null);
   const urgency = urgencyConfig[result.urgencyLevel];
   const UrgencyIcon = urgency.icon;
+
+  const handleFindSpecialist = (specialist: string) => {
+    setActiveSpecialist(specialist);
+    onFindSpecialist(specialist);
+  };
+
+  if (activeSpecialist) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
+        <DoctorBooking
+          specialist={activeSpecialist}
+          onClose={() => setActiveSpecialist(null)}
+        />
+        <Button onClick={onReset} variant="outline" className="w-full">
+          New Analysis
+        </Button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -112,7 +138,7 @@ export const AnalysisResults = ({ result, onFindSpecialist, onReset }: AnalysisR
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onFindSpecialist(condition.specialist)}
+                  onClick={() => handleFindSpecialist(condition.specialist)}
                   className="gap-1"
                 >
                   Find <ArrowRight className="w-3 h-3" />
