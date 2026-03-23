@@ -16,7 +16,7 @@ import {
 import { QuickActionCard } from '@/components/ui/QuickActionCard';
 import { MedCard } from '@/components/ui/MedCard';
 import { DiseaseFinder } from '@/components/disease-finder/DiseaseFinder';
-import { SpecialistDirectory } from '@/components/disease-finder/SpecialistDirectory';
+import { DoctorBooking } from '@/components/disease-finder/DoctorBooking';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import type { Tables } from '@/integrations/supabase/types';
