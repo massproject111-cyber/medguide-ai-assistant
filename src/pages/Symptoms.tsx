@@ -20,7 +20,7 @@ const Symptoms = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<SymptomAnalysis | null>(null);
-  const isConfigured = geminiService.isConfigured();
+  const isConfigured = isAIConfigured();
 
   const filteredSymptoms = COMMON_SYMPTOMS.filter(s =>
     s.toLowerCase().includes(searchTerm.toLowerCase())
