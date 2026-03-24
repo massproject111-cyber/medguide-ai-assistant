@@ -42,7 +42,7 @@ const Scan = () => {
 
       setIsProcessing(true);
       try {
-        const prescription = await geminiService.scanPrescription(base64Data, mimeType);
+        const prescription = await scanPrescription(base64Data, mimeType);
         setResult(prescription);
         setSelectedMeds(new Set(prescription.medications.map((_, i) => i)));
       } catch (error) {

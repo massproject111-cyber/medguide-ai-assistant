@@ -98,11 +98,11 @@ const Chat = () => {
     }]);
 
     try {
-      const geminiMessages: GeminiMessage[] = messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
+      const chatMessages: AIMessage[] = messages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
       }));
-      geminiMessages.push({ role: 'user', parts: [{ text: userInput }] });
+      chatMessages.push({ role: 'user', content: userInput });
 
       let streamedContent = '';
 
@@ -115,20 +115,22 @@ const Chat = () => {
         medications: medications || [],
       };
 
-      await geminiService.streamChat(
-        geminiMessages, 
-        chatContext,
-        (delta) => {
+      await streamChat({
+        messages: chatMessages,
+        userContext: chatContext,
+        onDelta: (delta) => {
           streamedContent += delta;
-          setMessages(prev => 
-            prev.map(m => 
-              m.id === assistantId 
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantId
                 ? { ...m, content: streamedContent }
                 : m
             )
           );
-        }
-      );
+        },
+        onDone: () => {},
+        onError: (err) => { throw new Error(err); },
+      });
 
       // Parse reasoning after stream completes
       const { cleanContent, reasoning } = extractReasoning(streamedContent);

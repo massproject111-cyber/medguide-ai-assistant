@@ -32,7 +32,7 @@ const Interactions = () => {
     setResult(null);
 
     try {
-      const interaction = await geminiService.checkDrugInteraction(drug1.trim(), drug2.trim());
+      const interaction = await checkDrugInteraction(drug1.trim(), drug2.trim());
       setResult(interaction);
     } catch (error) {
       toast.error('Failed to check interaction. Please try again.');

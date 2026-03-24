@@ -49,7 +49,7 @@ const Symptoms = () => {
     setResult(null);
 
     try {
-      const analysis = await geminiService.analyzeSymptoms([...selectedSymptoms]);
+      const analysis = await analyzeSymptoms([...selectedSymptoms]);
       setResult(analysis);
       addLog('symptom_check', { symptoms: [...selectedSymptoms], result: analysis });
     } catch (error) {
