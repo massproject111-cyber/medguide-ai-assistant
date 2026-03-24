@@ -74,7 +74,7 @@ const Home = () => {
     if (medications.length === 0) return null;
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
+
     // Find next medication by time
     const sorted = [...medications].sort((a, b) => {
       const aTime = a.times?.[0] || '00:00';
@@ -181,8 +181,8 @@ const Home = () => {
             />
             <QuickActionCard
               icon={Pill}
-              label="Drug Checker"
-              description="Check interactions"
+              label="Interaction Analysis"
+              description="Check med interactions"
               variant="warning"
               onClick={() => navigate('/interactions')}
             />

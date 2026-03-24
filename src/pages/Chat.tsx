@@ -202,7 +202,7 @@ const Chat = () => {
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-32">
         <div className="container max-w-lg mx-auto px-4 py-6 space-y-4">
 
           {messages.length === 0 && (
@@ -242,12 +242,12 @@ const Chat = () => {
                   )}
                 </div>
                 <div
-                  className={`flex-1 max-w-[80%] ${
-                    message.role === 'user' ? 'text-right' : ''
+                  className={`flex-1 max-w-[80%] flex flex-col ${
+                    message.role === 'user' ? 'items-end text-right' : 'items-start text-left'
                   }`}
                 >
                   <div
-                    className={`inline-block p-4 rounded-[1.5rem] ${
+                    className={`inline-block p-4 rounded-[1.5rem] text-left ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground shadow-medium rounded-tr-none'
                         : 'bg-card border border-border/50 shadow-soft rounded-tl-none'
@@ -258,7 +258,9 @@ const Chat = () => {
                       <div className="mb-4">
                         <button
                           onClick={() => toggleReasoning(message.id)}
-                          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 hover:bg-primary/20 rounded-xl px-4 py-2.5 w-full transition-all border border-primary/10"
+                          className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider bg-black/5 hover:bg-black/10 rounded-xl px-4 py-2.5 w-full transition-all ${
+                            message.role === 'user' ? 'text-primary-foreground/90' : 'text-primary border-primary/10'
+                          }`}
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           Clinical Reasoning
@@ -279,8 +281,8 @@ const Chat = () => {
                               <div className="mt-3 space-y-3 pl-4 border-l-2 border-primary/30 py-1">
                                 {message.reasoning.map((step, i) => (
                                   <div key={i} className="space-y-1">
-                                    <p className="text-[10px] font-black text-primary uppercase leading-none opacity-60">Step {i + 1}</p>
-                                    <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                                    <p className={`text-[10px] font-black uppercase leading-none opacity-60 ${message.role === 'user' ? 'text-primary-foreground' : 'text-primary'}`}>Step {i + 1}</p>
+                                    <p className={`text-xs font-medium leading-relaxed ${message.role === 'user' ? 'text-primary-foreground/90' : 'text-muted-foreground'}`}>
                                       {step}
                                     </p>
                                   </div>
@@ -295,7 +297,7 @@ const Chat = () => {
                       {message.content}
                     </div>
                   </div>
-                  <p className="text-[10px] font-bold text-muted-foreground/60 mt-1.5 px-1 uppercase tracking-tighter">
+                  <p className={`text-[10px] font-bold mt-1.5 px-1 uppercase tracking-tighter ${message.role === 'user' ? 'text-muted-foreground/60 mr-1' : 'text-muted-foreground/60 ml-1'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -327,7 +329,7 @@ const Chat = () => {
       </main>
 
       {/* Input */}
-      <div className="sticky bottom-16 glass border-t border-border/50 p-4">
+      <div className="sticky bottom-16 glass border-t border-border/50 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="container max-w-lg mx-auto">
           <form
             onSubmit={e => {

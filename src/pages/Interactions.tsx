@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Pill, ArrowRight, AlertTriangle, Check, Shield, Zap } from 'lucide-react';
+import { ArrowLeft, Pill, Plus, AlertTriangle, Check, Shield, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { checkDrugInteraction, isAIConfigured, type DrugInteraction } from '@/lib/ai-service';
 import { Input } from '@/components/ui/input';
@@ -88,7 +88,7 @@ const Interactions = () => {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </motion.button>
             <div className="flex-1">
-              <h1 className="font-display text-xl font-semibold text-foreground">Drug Interactions</h1>
+              <h1 className="font-display text-xl font-semibold text-foreground">Interaction Analysis</h1>
               <p className="text-sm text-muted-foreground">Check medication safety</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
@@ -142,7 +142,7 @@ const Interactions = () => {
               />
             </div>
             <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 mt-5">
-              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              <Plus className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <Label htmlFor="drug2" className="text-xs text-muted-foreground">Second Medication</Label>
