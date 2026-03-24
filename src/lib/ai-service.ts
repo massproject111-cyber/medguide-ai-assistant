@@ -1,10 +1,19 @@
-// AI Service using Lovable AI Gateway
+// AI Service using Lovable AI Gateway via edge function
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export interface AIMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+export interface ChatContext {
+  age?: number;
+  gender?: string;
+  bloodType?: string;
+  conditions?: string[];
+  allergies?: string[];
+  medications?: any[];
 }
 
 export interface SymptomAnalysis {
@@ -31,13 +40,14 @@ export interface PrescriptionData {
     name: string;
     dosage: string;
     frequency: string;
+    time?: string;
     instructions?: string;
   }[];
 }
 
 interface StreamOptions {
   messages: AIMessage[];
-  userContext?: { age?: number; conditions?: string[] };
+  userContext?: ChatContext;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -51,10 +61,10 @@ export async function streamChat({ messages, userContext, onDelta, onDone, onErr
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         messages: messages.map(m => ({ role: m.role, content: m.content })),
         action: 'chat',
-        userContext 
+        userContext
       }),
     });
 
@@ -131,117 +141,47 @@ export async function streamChat({ messages, userContext, onDelta, onDone, onErr
   }
 }
 
-export async function analyzeSymptoms(symptoms: string[]): Promise<SymptomAnalysis> {
+async function callNonStreaming(body: Record<string, unknown>): Promise<string> {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ 
-      action: 'symptoms',
-      symptoms 
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!resp.ok) {
-    throw new Error("Failed to analyze symptoms");
+    const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(err.error || `Request failed (${resp.status})`);
   }
 
-  // Parse streaming response to get full text
-  const text = await parseStreamToText(resp);
+  const data = await resp.json();
+  return data.text || '';
+}
+
+export async function analyzeSymptoms(symptoms: string[]): Promise<SymptomAnalysis> {
+  const text = await callNonStreaming({ action: 'symptoms', symptoms });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Invalid response format');
-  
   return JSON.parse(jsonMatch[0]);
 }
 
 export async function checkDrugInteraction(drug1: string, drug2: string): Promise<DrugInteraction> {
-  const resp = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
-    body: JSON.stringify({ 
-      action: 'interactions',
-      drug1,
-      drug2 
-    }),
-  });
-
-  if (!resp.ok) {
-    throw new Error("Failed to check drug interaction");
-  }
-
-  const text = await parseStreamToText(resp);
+  const text = await callNonStreaming({ action: 'interactions', drug1, drug2 });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Invalid response format');
-  
   return JSON.parse(jsonMatch[0]);
 }
 
-export async function scanPrescription(imageBase64: string): Promise<PrescriptionData> {
-  const resp = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
-    body: JSON.stringify({ 
-      action: 'scan',
-      imageBase64 
-    }),
-  });
-
-  if (!resp.ok) {
-    throw new Error("Failed to scan prescription");
-  }
-
-  const text = await parseStreamToText(resp);
+export async function scanPrescription(imageBase64: string, imageMimeType?: string): Promise<PrescriptionData> {
+  const text = await callNonStreaming({ action: 'scan', imageBase64, imageMimeType });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Invalid response format');
-  
   return JSON.parse(jsonMatch[0]);
 }
 
-async function parseStreamToText(resp: Response): Promise<string> {
-  if (!resp.body) throw new Error("No response body");
-  
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = "";
-  let textBuffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    textBuffer += decoder.decode(value, { stream: true });
-
-    let newlineIndex: number;
-    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-      let line = textBuffer.slice(0, newlineIndex);
-      textBuffer = textBuffer.slice(newlineIndex + 1);
-
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (line.startsWith(":") || line.trim() === "") continue;
-      if (!line.startsWith("data: ")) continue;
-
-      const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") continue;
-
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) fullText += content;
-      } catch { /* ignore partial */ }
-    }
-  }
-
-  return fullText;
-}
-
-// Check if AI is configured (always true with Lovable AI)
+// Always configured with Lovable AI
 export function isAIConfigured(): boolean {
   return true;
 }
