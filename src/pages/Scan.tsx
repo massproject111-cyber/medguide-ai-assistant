@@ -18,7 +18,7 @@ const Scan = () => {
   const [result, setResult] = useState<PrescriptionData | null>(null);
   const [selectedMeds, setSelectedMeds] = useState<Set<number>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const isConfigured = geminiService.isConfigured();
+  const isConfigured = isAIConfigured();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
