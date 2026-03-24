@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Camera, Upload, FileText, Plus, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, PrescriptionData } from '@/lib/gemini';
+import { scanPrescription, isAIConfigured, type PrescriptionData } from '@/lib/ai-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ const Scan = () => {
   const [result, setResult] = useState<PrescriptionData | null>(null);
   const [selectedMeds, setSelectedMeds] = useState<Set<number>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const isConfigured = geminiService.isConfigured();
+  const isConfigured = isAIConfigured();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -42,7 +42,7 @@ const Scan = () => {
 
       setIsProcessing(true);
       try {
-        const prescription = await geminiService.scanPrescription(base64Data, mimeType);
+        const prescription = await scanPrescription(base64Data, mimeType);
         setResult(prescription);
         setSelectedMeds(new Set(prescription.medications.map((_, i) => i)));
       } catch (error) {

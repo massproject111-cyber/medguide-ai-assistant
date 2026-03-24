@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Activity, Search, AlertTriangle, ChevronRight, Stethoscope, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, SymptomAnalysis } from '@/lib/gemini';
+import { analyzeSymptoms, isAIConfigured, type SymptomAnalysis } from '@/lib/ai-service';
 import { addLog } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-import { COMMON_SYMPTOMS } from '@/lib/constants';
+const COMMON_SYMPTOMS = [
+  'Headache', 'Fever', 'Cough', 'Fatigue', 'Nausea',
+  'Sore throat', 'Body aches', 'Runny nose', 'Dizziness',
+  'Shortness of breath', 'Chest pain', 'Abdominal pain',
+  'Back pain', 'Joint pain', 'Skin rash', 'Insomnia'
+];
 
 const Symptoms = () => {
   const navigate = useNavigate();
@@ -15,7 +20,7 @@ const Symptoms = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<SymptomAnalysis | null>(null);
-  const isConfigured = geminiService.isConfigured();
+  const isConfigured = isAIConfigured();
 
   const filteredSymptoms = COMMON_SYMPTOMS.filter(s =>
     s.toLowerCase().includes(searchTerm.toLowerCase())
@@ -44,11 +49,10 @@ const Symptoms = () => {
     setResult(null);
 
     try {
-      const analysis = await geminiService.analyzeSymptoms([...selectedSymptoms]);
+      const analysis = await analyzeSymptoms([...selectedSymptoms]);
       setResult(analysis);
       addLog('symptom_check', { symptoms: [...selectedSymptoms], result: analysis });
     } catch (error) {
-      console.error('Symptom analysis error:', error);
       toast.error('Failed to analyze symptoms. Please try again.');
     } finally {
       setIsAnalyzing(false);
@@ -138,46 +142,39 @@ const Symptoms = () => {
 
               {/* Conditions */}
               <div className="space-y-3">
-                {result.conditions.length > 0 ? (
-                  result.conditions.map((condition, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="bg-card rounded-2xl p-4 shadow-card border border-border/50"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-display font-semibold text-foreground">{condition.name}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{condition.description}</p>
-                        </div>
-                        <span className="text-2xl font-bold text-primary">{condition.confidence}%</span>
+                {result.conditions.map((condition, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-card rounded-2xl p-4 shadow-card border border-border/50"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-display font-semibold text-foreground">{condition.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{condition.description}</p>
                       </div>
-                      
-                      {/* Confidence Bar */}
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${condition.confidence}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className={`h-full rounded-full ${getConfidenceColor(condition.confidence)}`}
-                        />
-                      </div>
+                      <span className="text-2xl font-bold text-primary">{condition.confidence}%</span>
+                    </div>
+                    
+                    {/* Confidence Bar */}
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${condition.confidence}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className={`h-full rounded-full ${getConfidenceColor(condition.confidence)}`}
+                      />
+                    </div>
 
-                      <div className="flex items-center gap-2 text-sm">
-                        <Stethoscope className="w-4 h-4 text-primary" />
-                        <span className="text-muted-foreground">Recommended:</span>
-                        <span className="font-medium text-foreground">{condition.specialist}</span>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="p-6 bg-card rounded-2xl border border-border/50 text-center">
-                    <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-20" />
-                    <p className="text-sm text-muted-foreground">No specific conditions identified. Consider adding more symptoms for a better analysis.</p>
-                  </div>
-                )}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Stethoscope className="w-4 h-4 text-primary" />
+                      <span className="text-muted-foreground">Recommended:</span>
+                      <span className="font-medium text-foreground">{condition.specialist}</span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
               {/* Recommendations */}
@@ -229,35 +226,18 @@ const Symptoms = () => {
               />
             </div>
 
-            {/* Selected Symptoms Chips */}
+            {/* Selected Count */}
             {selectedSymptoms.size > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">
-                    Selected Symptoms ({selectedSymptoms.size})
-                  </span>
-                  <button
-                    onClick={() => setSelectedSymptoms(new Set())}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Clear all
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[...selectedSymptoms].map(symptom => (
-                    <motion.button
-                      layout
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      key={symptom}
-                      onClick={() => toggleSymptom(symptom)}
-                      className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-xs font-medium text-primary flex items-center gap-1.5 hover:bg-primary/20 transition-colors"
-                    >
-                      {symptom}
-                      <Check className="w-3 h-3" />
-                    </motion.button>
-                  ))}
-                </div>
+              <div className="flex items-center justify-between bg-primary/10 rounded-xl px-4 py-3">
+                <span className="text-sm font-medium text-primary">
+                  {selectedSymptoms.size} symptom{selectedSymptoms.size > 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={() => setSelectedSymptoms(new Set())}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Clear all
+                </button>
               </div>
             )}
 

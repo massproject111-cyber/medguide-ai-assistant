@@ -132,20 +132,11 @@ class GeminiService {
 
     const data = await response.json();
     const text = data.text || '';
-    console.log('Gemini raw analysis text:', text);
     
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('Failed to find JSON in response:', text);
-      throw new Error('Invalid response format');
-    }
+    if (!jsonMatch) throw new Error('Invalid response format');
     
-    try {
-      return JSON.parse(jsonMatch[0]);
-    } catch (e) {
-      console.error('JSON parse error:', e, 'Text:', jsonMatch[0]);
-      throw e;
-    }
+    return JSON.parse(jsonMatch[0]);
   }
 
   async checkDrugInteraction(drug1: string, drug2: string): Promise<DrugInteraction> {

@@ -6,8 +6,6 @@ import { SymptomSelector, type SelectedSymptom } from './SymptomSelector';
 import { AnalysisResults, type AnalysisResult } from './AnalysisResults';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { geminiService } from '@/lib/gemini';
-import { addLog } from '@/lib/storage';
 
 interface DiseaseFinderProps {
   onFindSpecialist: (specialist: string) => void;
@@ -29,22 +27,36 @@ export const DiseaseFinder = ({ onFindSpecialist }: DiseaseFinderProps) => {
       // Format symptoms with severity for better analysis
       const symptomList = symptoms.map(s => `${s.name} (${s.severity})`);
 
-      const analysis = await geminiService.analyzeSymptoms(symptomList);
-      
-      setResult(analysis);
-      addLog('symptom_check', { symptoms: symptomList, result: analysis });
-      toast.success('Analysis complete');
-    } catch (error: any) {
-      console.error('Analysis error:', error);
-      
-      let errorMessage = 'Failed to analyze symptoms. Please try again.';
-      if (error.status === 429 || error.message?.includes('429')) {
-        errorMessage = 'Rate limit exceeded. Please wait a minute and try again.';
-      } else if (error.message?.includes('API key')) {
-        errorMessage = 'Gemini API key issue. Please check your configuration.';
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: {
+          action: 'symptoms',
+          symptoms: symptomList
+        }
+      });
+
+      if (error) throw error;
+
+      // Parse the response
+      let parsed: AnalysisResult;
+      try {
+        const text = data.text || '';
+        // Extract JSON from the response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found in response');
+        }
+      } catch (parseError) {
+        console.error('Parse error:', parseError, data);
+        throw new Error('Failed to parse AI response');
       }
-      
-      toast.error(errorMessage);
+
+      setResult(parsed);
+      toast.success('Analysis complete');
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast.error('Failed to analyze symptoms. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }

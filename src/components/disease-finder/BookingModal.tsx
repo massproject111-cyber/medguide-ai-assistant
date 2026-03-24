@@ -37,7 +37,8 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
     
     setLoading(true);
     try {
-      const appointmentDetails = {
+      // @ts-expect-error Types for 'appointments' table are missing in Supabase generated types
+      const { error } = await supabase.from('appointments').insert({
         user_id: user.id,
         doctor_name: doctor.name,
         specialty: doctor.specialty,
@@ -46,24 +47,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
         appointment_time: time,
         reason: reason,
         status: 'scheduled'
-      };
-
-      try {
-        // HTTP Request to Webhook (Replace this URL with your custom Google Apps Script or Zapier URL)
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; 
-        // Using no-cors mode allows sending POST to Google Apps Script without blocked by CORS issues
-        await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(appointmentDetails)
-        });
-        console.log('Webhook sent successfully');
-      } catch (webhookError) {
-        console.warn('Webhook notification failed but proceeding to save to database...', webhookError);
-      }
-
-      const { error } = await supabase.from('appointments').insert(appointmentDetails);
+      });
 
       if (error) throw error;
 

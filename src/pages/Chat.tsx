@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Bot, User, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, GeminiMessage, ChatContext } from '@/lib/gemini';
+import { streamChat, type AIMessage, type ChatContext } from '@/lib/ai-service';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -98,11 +98,11 @@ const Chat = () => {
     }]);
 
     try {
-      const geminiMessages: GeminiMessage[] = messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
+      const chatMessages: AIMessage[] = messages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
       }));
-      geminiMessages.push({ role: 'user', parts: [{ text: userInput }] });
+      chatMessages.push({ role: 'user', content: userInput });
 
       let streamedContent = '';
 
@@ -115,20 +115,22 @@ const Chat = () => {
         medications: medications || [],
       };
 
-      await geminiService.streamChat(
-        geminiMessages, 
-        chatContext,
-        (delta) => {
+      await streamChat({
+        messages: chatMessages,
+        userContext: chatContext,
+        onDelta: (delta) => {
           streamedContent += delta;
-          setMessages(prev => 
-            prev.map(m => 
-              m.id === assistantId 
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantId
                 ? { ...m, content: streamedContent }
                 : m
             )
           );
-        }
-      );
+        },
+        onDone: () => {},
+        onError: (err) => { throw new Error(err); },
+      });
 
       // Parse reasoning after stream completes
       const { cleanContent, reasoning } = extractReasoning(streamedContent);

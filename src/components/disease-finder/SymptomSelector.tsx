@@ -5,7 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-import { COMMON_SYMPTOMS } from '@/lib/constants';
+const COMMON_SYMPTOMS = [
+  'Headache', 'Fever', 'Cough', 'Fatigue', 'Nausea', 'Dizziness',
+  'Sore Throat', 'Chest Pain', 'Shortness of Breath', 'Back Pain',
+  'Abdominal Pain', 'Joint Pain', 'Runny Nose', 'Muscle Aches',
+  'Vomiting', 'Diarrhea', 'Loss of Appetite', 'Skin Rash',
+  'Insomnia', 'Anxiety', 'Weakness', 'Swelling'
+];
 
 const SEVERITY_LEVELS = [
   { value: 'mild', label: 'Mild', color: 'bg-success/20 text-success border-success/30' },

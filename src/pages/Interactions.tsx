@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Pill, ArrowRight, AlertTriangle, Check, Shield, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, DrugInteraction } from '@/lib/gemini';
+import { checkDrugInteraction, isAIConfigured, type DrugInteraction } from '@/lib/ai-service';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ const Interactions = () => {
   const [drug2, setDrug2] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<DrugInteraction | null>(null);
-  const isConfigured = geminiService.isConfigured();
+  const isConfigured = isAIConfigured();
 
   const handleCheck = async () => {
     if (!drug1.trim() || !drug2.trim()) {
@@ -32,7 +32,7 @@ const Interactions = () => {
     setResult(null);
 
     try {
-      const interaction = await geminiService.checkDrugInteraction(drug1.trim(), drug2.trim());
+      const interaction = await checkDrugInteraction(drug1.trim(), drug2.trim());
       setResult(interaction);
     } catch (error) {
       toast.error('Failed to check interaction. Please try again.');
