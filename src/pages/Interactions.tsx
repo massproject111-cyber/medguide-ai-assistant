@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Pill, ArrowRight, AlertTriangle, Check, Shield, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, DrugInteraction } from '@/lib/gemini';
+import { checkDrugInteraction, isAIConfigured, type DrugInteraction } from '@/lib/ai-service';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';

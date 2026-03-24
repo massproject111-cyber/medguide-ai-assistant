@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Activity, Search, AlertTriangle, ChevronRight, Stethoscope, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, SymptomAnalysis } from '@/lib/gemini';
+import { analyzeSymptoms, isAIConfigured, type SymptomAnalysis } from '@/lib/ai-service';
 import { addLog } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';

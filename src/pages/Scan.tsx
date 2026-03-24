@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Camera, Upload, FileText, Plus, Check, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, PrescriptionData } from '@/lib/gemini';
+import { scanPrescription, isAIConfigured, type PrescriptionData } from '@/lib/ai-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';

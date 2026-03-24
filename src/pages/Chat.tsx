@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Bot, User, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { geminiService, GeminiMessage, ChatContext } from '@/lib/gemini';
+import { streamChat, type AIMessage, type ChatContext } from '@/lib/ai-service';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
