@@ -14,7 +14,7 @@ const Interactions = () => {
   const [drug2, setDrug2] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<DrugInteraction | null>(null);
-  const isConfigured = geminiService.isConfigured();
+  const isConfigured = isAIConfigured();
 
   const handleCheck = async () => {
     if (!drug1.trim() || !drug2.trim()) {
