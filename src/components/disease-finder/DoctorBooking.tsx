@@ -32,16 +32,27 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
   const searchDoctors = useCallback(async (loc: string) => {
     setIsLoading(true);
     setHasSearched(true);
+    setDoctors([]);
+    setAiAnswer(null);
     try {
       const { data, error } = await supabase.functions.invoke('search-doctors', {
         body: { specialist, location: loc },
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
 
-      setDoctors(data.doctors || []);
-      setAiAnswer(data.answer || null);
+      // Handle case where data might be a string (not auto-parsed)
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+
+      if (parsed.error) throw new Error(parsed.error);
+
+      console.log('Doctor search results:', parsed);
+      setDoctors(parsed.doctors || []);
+      setAiAnswer(parsed.answer || null);
+
+      if ((parsed.doctors || []).length === 0) {
+        toast.info('No doctors found. Try a different location or search online below.');
+      }
     } catch (err) {
       console.error('Search error:', err);
       toast.error('Failed to search for doctors. Please try again.');
