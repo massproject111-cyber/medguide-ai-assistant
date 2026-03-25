@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Activity, Search, AlertTriangle, ChevronRight, Stethoscope, Check } from 'lucide-react';
+import { ArrowLeft, Activity, Search, AlertTriangle, ChevronRight, Stethoscope, Check, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeSymptoms, isAIConfigured, type SymptomAnalysis } from '@/lib/ai-service';
 import { addLog } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DoctorBooking } from '@/components/disease-finder/DoctorBooking';
 
 const COMMON_SYMPTOMS = [
   'Headache', 'Fever', 'Cough', 'Fatigue', 'Nausea',
@@ -20,6 +21,7 @@ const Symptoms = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<SymptomAnalysis | null>(null);
+  const [activeSpecialist, setActiveSpecialist] = useState<string | null>(null);
   const isConfigured = isAIConfigured();
 
   const filteredSymptoms = COMMON_SYMPTOMS.filter(s =>
@@ -127,7 +129,32 @@ const Symptoms = () => {
 
         {/* Results */}
         <AnimatePresence mode="wait">
-          {result && (
+          {activeSpecialist && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
+            >
+              <DoctorBooking
+                specialist={activeSpecialist}
+                onClose={() => setActiveSpecialist(null)}
+              />
+              <Button
+                onClick={() => {
+                  setResult(null);
+                  setActiveSpecialist(null);
+                  setSelectedSymptoms(new Set());
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                Start New Check
+              </Button>
+            </motion.div>
+          )}
+
+          {result && !activeSpecialist && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -168,10 +195,20 @@ const Symptoms = () => {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Stethoscope className="w-4 h-4 text-primary" />
-                      <span className="text-muted-foreground">Recommended:</span>
-                      <span className="font-medium text-foreground">{condition.specialist}</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Stethoscope className="w-4 h-4 text-primary" />
+                        <span className="text-muted-foreground">Recommended:</span>
+                        <span className="font-medium text-foreground">{condition.specialist}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveSpecialist(condition.specialist)}
+                        className="gap-1 shrink-0"
+                      >
+                        Find <ArrowRight className="w-3 h-3" />
+                      </Button>
                     </div>
                   </motion.div>
                 ))}
