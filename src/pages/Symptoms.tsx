@@ -129,7 +129,32 @@ const Symptoms = () => {
 
         {/* Results */}
         <AnimatePresence mode="wait">
-          {result && (
+          {activeSpecialist && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
+            >
+              <DoctorBooking
+                specialist={activeSpecialist}
+                onClose={() => setActiveSpecialist(null)}
+              />
+              <Button
+                onClick={() => {
+                  setResult(null);
+                  setActiveSpecialist(null);
+                  setSelectedSymptoms(new Set());
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                Start New Check
+              </Button>
+            </motion.div>
+          )}
+
+          {result && !activeSpecialist && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -170,10 +195,20 @@ const Symptoms = () => {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Stethoscope className="w-4 h-4 text-primary" />
-                      <span className="text-muted-foreground">Recommended:</span>
-                      <span className="font-medium text-foreground">{condition.specialist}</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Stethoscope className="w-4 h-4 text-primary" />
+                        <span className="text-muted-foreground">Recommended:</span>
+                        <span className="font-medium text-foreground">{condition.specialist}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveSpecialist(condition.specialist)}
+                        className="gap-1 shrink-0"
+                      >
+                        Find <ArrowRight className="w-3 h-3" />
+                      </Button>
                     </div>
                   </motion.div>
                 ))}
