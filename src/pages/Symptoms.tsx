@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Activity, Search, AlertTriangle, ChevronRight, Stethoscope, Check } from 'lucide-react';
+import { ArrowLeft, Activity, Search, AlertTriangle, ChevronRight, Stethoscope, Check, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeSymptoms, isAIConfigured, type SymptomAnalysis } from '@/lib/ai-service';
 import { addLog } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DoctorBooking } from '@/components/disease-finder/DoctorBooking';
 
 const COMMON_SYMPTOMS = [
   'Headache', 'Fever', 'Cough', 'Fatigue', 'Nausea',
