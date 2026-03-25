@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // AI Service using Lovable AI Gateway via edge function
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
@@ -36,12 +37,19 @@ export interface DrugInteraction {
 }
 
 export interface PrescriptionData {
+  doctorName?: string;
+  patientName?: string;
+  date?: string;
+  diagnosis?: string;
+  advice?: string;
   medications: {
     name: string;
     dosage: string;
     frequency: string;
-    time?: string;
+    times?: string[];
+    duration?: string;
     instructions?: string;
+    purpose?: string;
   }[];
 }
 

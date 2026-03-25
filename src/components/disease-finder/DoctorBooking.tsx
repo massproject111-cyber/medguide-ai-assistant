@@ -116,10 +116,6 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
     window.open(`https://www.google.com/search?q=${encodeURIComponent(`${specialist} doctor near ${location || 'me'}`)}`, '_blank');
   };
 
-  const openPracto = () => {
-    window.open(`https://www.practo.com/search/doctors?results_type=doctor&q=%5B%7B%22word%22%3A%22${encodeURIComponent(specialist)}%22%7D%5D&city=${encodeURIComponent(location || '')}`, '_blank');
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -285,15 +281,6 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
             >
               <ExternalLink className="w-3.5 h-3.5" />
               Google Search
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openPracto}
-              className="flex-1 rounded-xl h-10 gap-1.5 border-primary/20 hover:bg-primary/5 text-primary font-semibold text-xs"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Practo
             </Button>
           </div>
         </div>

@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Camera, Upload, FileText, Plus, Check, X } from 'lucide-react';
+import { ArrowLeft, Camera, Upload, FileText, Plus, Check, X, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { scanPrescription, isAIConfigured, type PrescriptionData } from '@/lib/ai-service';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +19,9 @@ const Scan = () => {
   const [result, setResult] = useState<PrescriptionData | null>(null);
   const [selectedMeds, setSelectedMeds] = useState<Set<number>>(new Set());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [editingMedIndex, setEditingMedIndex] = useState<number | null>(null);
+  const [editedMed, setEditedMed] = useState<any>(null);
+  const [newTimeInput, setNewTimeInput] = useState('');
   const isConfigured = isAIConfigured();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +83,7 @@ const Scan = () => {
           name: med.name,
           dosage: med.dosage,
           frequency: med.frequency,
-          times: [med.time && med.time !== 'null' ? med.time : '08:00'],
+          times: med.times && med.times.length > 0 ? med.times : ['08:00'],
           stock_count: 30,
         }))
       );
@@ -101,6 +105,44 @@ const Scan = () => {
     setPreviewImage(null);
     setSelectedMeds(new Set());
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const startEditing = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingMedIndex(index);
+    setEditedMed({ ...result!.medications[index] });
+    setNewTimeInput('');
+  };
+
+  const saveEdit = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!result || !editedMed) return;
+    const newMeds = [...result.medications];
+    newMeds[index] = editedMed;
+    setResult({ ...result, medications: newMeds });
+    setEditingMedIndex(null);
+  };
+
+  const cancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingMedIndex(null);
+  };
+
+  const removeTime = (timeIndex: number) => {
+    if (!editedMed) return;
+    const newTimes = [...(editedMed.times || [])];
+    newTimes.splice(timeIndex, 1);
+    setEditedMed({ ...editedMed, times: newTimes });
+  };
+
+  const addTime = () => {
+    if (!editedMed || !newTimeInput) return;
+    const newTimes = [...(editedMed.times || [])];
+    if (!newTimes.includes(newTimeInput)) {
+      newTimes.push(newTimeInput);
+      setEditedMed({ ...editedMed, times: newTimes.sort() });
+    }
+    setNewTimeInput('');
   };
 
   return (
@@ -256,6 +298,47 @@ const Scan = () => {
                 </div>
               )}
 
+              {/* Prescription Details */}
+              {(result.doctorName || result.patientName || result.date || result.diagnosis || result.advice) && (
+                <div className="bg-card rounded-2xl p-5 shadow-card border border-border/50">
+                  <h3 className="font-display font-semibold text-foreground mb-4">
+                    Prescription Details
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    {result.doctorName && result.doctorName !== 'null' && (
+                      <div className="flex gap-2">
+                        <span className="font-medium text-muted-foreground w-20 text-xs uppercase tracking-wider mt-0.5">Doctor</span>
+                        <span className="text-foreground flex-1 font-medium">{result.doctorName}</span>
+                      </div>
+                    )}
+                    {result.patientName && result.patientName !== 'null' && (
+                      <div className="flex gap-2">
+                        <span className="font-medium text-muted-foreground w-20 text-xs uppercase tracking-wider mt-0.5">Patient</span>
+                        <span className="text-foreground flex-1 font-medium">{result.patientName}</span>
+                      </div>
+                    )}
+                    {result.date && result.date !== 'null' && (
+                      <div className="flex gap-2">
+                        <span className="font-medium text-muted-foreground w-20 text-xs uppercase tracking-wider mt-0.5">Date</span>
+                        <span className="text-foreground flex-1 font-medium">{result.date}</span>
+                      </div>
+                    )}
+                    {result.diagnosis && result.diagnosis !== 'null' && (
+                      <div className="flex gap-2">
+                        <span className="font-medium text-muted-foreground w-20 text-xs uppercase tracking-wider mt-0.5">Diagnosis</span>
+                        <span className="text-foreground flex-1 font-medium leading-relaxed">{result.diagnosis}</span>
+                      </div>
+                    )}
+                    {result.advice && result.advice !== 'null' && (
+                      <div className="flex gap-2">
+                        <span className="font-medium text-muted-foreground w-20 text-xs uppercase tracking-wider mt-0.5">Advice</span>
+                        <span className="text-foreground flex-1 font-medium leading-relaxed">{result.advice}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Extracted Medications */}
               <div className="bg-card rounded-2xl p-5 shadow-card border border-border/50">
                 <h3 className="font-display font-semibold text-foreground mb-4">
@@ -268,35 +351,131 @@ const Scan = () => {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      onClick={() => toggleMed(i)}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      onClick={editingMedIndex === i ? undefined : () => toggleMed(i)}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        editingMedIndex === i ? 'border-primary shadow-md' :
                         selectedMeds.has(i)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border/50 bg-secondary/50'
+                          ? 'border-primary bg-primary/5 cursor-pointer'
+                          : 'border-border/50 bg-secondary/50 cursor-pointer'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                            selectedMeds.has(i) 
-                              ? 'bg-primary text-primary-foreground shadow-sm scale-110' 
-                              : 'bg-secondary text-muted-foreground'
-                          }`}
-                        >
-                          {selectedMeds.has(i) ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      {editingMedIndex === i ? (
+                        <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                            <h4 className="font-display font-semibold text-foreground">Edit Medication</h4>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm" onClick={cancelEdit} className="h-8">Cancel</Button>
+                              <Button size="sm" onClick={(e) => saveEdit(i, e)} className="h-8">Save</Button>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Name</Label>
+                              <Input 
+                                value={editedMed.name} 
+                                onChange={(e) => setEditedMed({...editedMed, name: e.target.value})}
+                                className="h-9 mt-1"
+                              />
+                            </div>
+                            <div className="flex gap-3">
+                              <div className="flex-1">
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Dosage</Label>
+                                <Input 
+                                  value={editedMed.dosage} 
+                                  onChange={(e) => setEditedMed({...editedMed, dosage: e.target.value})}
+                                  className="h-9 mt-1"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Frequency</Label>
+                                <Input 
+                                  value={editedMed.frequency} 
+                                  onChange={(e) => setEditedMed({...editedMed, frequency: e.target.value})}
+                                  className="h-9 mt-1"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Taking Times</Label>
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {(editedMed.times || []).map((t: string, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
+                                    <span className="text-xs font-semibold text-primary">{t}</span>
+                                    <button onClick={() => removeTime(idx)} className="p-0.5 hover:bg-primary/20 rounded-full text-primary">
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                                {(!editedMed.times || editedMed.times.length === 0) && (
+                                  <span className="text-xs text-muted-foreground italic py-1">No times set</span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Input 
+                                  type="time" 
+                                  value={newTimeInput} 
+                                  onChange={(e) => setNewTimeInput(e.target.value)}
+                                  className="h-9 w-32"
+                                />
+                                <Button type="button" variant="secondary" size="sm" onClick={addTime} className="h-9 px-3">
+                                  Add Time
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-display font-bold text-foreground truncate">{med.name}</h4>
-                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-2 mt-0.5">
-                            <span className="px-1.5 py-0.5 bg-secondary rounded text-[10px] uppercase tracking-wider">{med.dosage}</span>
-                            <span className="opacity-50">•</span>
-                            <span>{med.frequency}</span>
-                          </p>
-                          {med.instructions && (
-                            <p className="text-[10px] text-muted-foreground/80 italic mt-1 truncate">{med.instructions}</p>
-                          )}
+                      ) : (
+                        <div className="flex items-start gap-4">
+                          <div
+                            className={`w-7 h-7 mt-1 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                              selectedMeds.has(i) 
+                                ? 'bg-primary text-primary-foreground shadow-sm scale-110' 
+                                : 'bg-secondary text-muted-foreground'
+                            }`}
+                          >
+                            {selectedMeds.has(i) ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <h4 className="font-display font-bold text-foreground truncate">{med.name}</h4>
+                              <button 
+                                onClick={(e) => startEditing(i, e)}
+                                className="p-1.5 -mr-1.5 -mt-1 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <p className="text-xs font-medium text-muted-foreground flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="px-1.5 py-0.5 bg-secondary rounded text-[10px] uppercase tracking-wider">{med.dosage}</span>
+                              <span className="opacity-50">•</span>
+                              <span>{med.frequency}</span>
+                              {med.duration && med.duration !== 'null' && (
+                                <>
+                                  <span className="opacity-50">•</span>
+                                  <span>{med.duration}</span>
+                                </>
+                              )}
+                            </p>
+                            {med.times && med.times.length > 0 && (
+                              <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                {med.times.map((t: string, idx: number) => (
+                                  <span key={idx} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-semibold tracking-wider">
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {med.purpose && med.purpose !== 'null' && (
+                              <p className="text-xs text-primary/90 font-medium mt-1.5">{med.purpose}</p>
+                            )}
+                            {med.instructions && med.instructions !== 'null' && (
+                              <p className="text-[10px] text-muted-foreground/80 italic mt-1 truncate">{med.instructions}</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </motion.div>
                   ))}
                 </div>

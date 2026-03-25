@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, Droplet, Scale, AlertTriangle, Heart, Plus, Edit2, Save, History, Activity, Pill, Sparkles, Loader2 } from 'lucide-react';

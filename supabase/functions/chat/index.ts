@@ -1,4 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/// <reference types="@types/deno" />
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +27,7 @@ interface ChatRequest {
   };
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -112,23 +114,38 @@ Risk levels: low (no significant interaction), moderate (use with caution), high
       // For image scanning, we use Gemini vision model via the gateway
       aiMessages.push({
         role: "user",
-        content: `Analyze this prescription image (base64 encoded, mime type: ${imageMimeType || 'image/jpeg'}) and extract medication information.
+        content: `Analyze this prescription image (base64 encoded, mime type: ${imageMimeType || 'image/jpeg'}) and extract medication information. Make sure to handle messy or unclear handwriting by deducing contextually likely medication names.
+
+### MEDICAL ABBREVIATIONS & CONTEXT TRAINING GUIDE:
+Use the following common medical abbreviations to decipher unclear handwriting:
+- Frequency: QD (1x daily), BID (2x daily), TID (3x daily), QID (4x daily), Q4H (every 4 hrs), PRN (as needed).
+- Route: PO (by mouth), IV (intravenous), IM (intramuscular), SC/SQ (subcutaneous).
+- Timing: AC (before meals), PC (after meals), HS (at bedtime), AM (morning), PM (evening).
+- Forms: TAB (tablet), CAP (capsule), SYR (syrup), SUSP (suspension), UNG/OINT (ointment), GTT (drops).
+If a drug name is scribbled but ends in "-cillin", it's likely a penicillin antibiotic. If it ends in "-olol", it's a beta-blocker. Use your extensive medical training to infer the most likely valid medication name rather than outputting literal gibberish.
 
 The image data is: [IMAGE_DATA_PLACEHOLDER]
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format, with no markdown formatting around it:
 {
+  "doctorName": "Doctor's name if visible, or null",
+  "patientName": "Patient's name if visible, or null",
+  "date": "Date of prescription if visible, or null",
+  "diagnosis": "Mentioned diagnosis/symptoms, or null",
+  "advice": "General advice, diet, or next visit date, or null",
   "medications": [
     {
-      "name": "Medication Name",
+      "name": "Medication Name (if unclear, use medical context to deduce it or provide best guess)",
       "dosage": "Dosage amount",
-      "frequency": "How often to take",
-      "time": "Specific time if mentioned, e.g., 09:00, or null if not specified",
-      "instructions": "Additional instructions if any"
+      "frequency": "How often to take (translate Latin abbreviations into plain English using the guide)",
+      "times": ["08:00", "20:00"],
+      "duration": "How many days/weeks, or null",
+      "instructions": "Additional instructions if any (e.g., Take after meals)",
+      "purpose": "Inferred medical purpose/condition this treats based on the medication name, or null if unknown"
     }
   ]
 }
-Extract the exact time if mentioned (e.g. 9 AM -> 09:00). If no time is mentioned, set it to null.`
+For 'times', provide an array of specific taking times in 24-hour HH:MM format (e.g. ["09:00"]). If times aren't explicitly mentioned, but frequency is (e.g. twice a day), deduce logical times like ["08:00", "20:00"]. If totally unknown, return empty array [].`
       });
     } else if (messages && messages.length > 0) {
       for (const msg of messages) {

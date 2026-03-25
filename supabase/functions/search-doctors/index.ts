@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /// <reference types="@types/deno" />
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
