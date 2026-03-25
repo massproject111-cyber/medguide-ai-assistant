@@ -20,8 +20,8 @@ interface BookingModalProps {
 }
 
 const AVAILABLE_TIMES = [
-  '09:00 AM', '10:00 AM', '11:00 AM', 
-  '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
+  '09:00 AM', '10:00 AM', '11:00 AM',
+  '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
 ];
 
 export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => {
@@ -34,7 +34,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
 
   const handleBooking = async () => {
     if (!user || !doctor) return;
-    
+
     setLoading(true);
     try {
       // @ts-expect-error Types for 'appointments' table are missing in Supabase generated types
@@ -57,9 +57,9 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
       console.error('Booking error:', error);
       let errorMessage = 'Failed to book appointment';
       if (error instanceof Error) {
-          errorMessage = error.message;
+        errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null && 'message' in error) {
-          errorMessage = String((error as Error).message);
+        errorMessage = String((error as Error).message);
       }
       toast.error(errorMessage);
     } finally {
@@ -103,15 +103,15 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Select Date</Label>
-                    <Input 
-                      type="date" 
-                      value={date} 
+                    <Input
+                      type="date"
+                      value={date}
                       min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setDate(e.target.value)}
                       className="h-12 rounded-xl"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2"><Clock className="w-4 h-4" /> Select Time</Label>
                     <div className="grid grid-cols-3 gap-2">
@@ -119,11 +119,10 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
                         <button
                           key={t}
                           onClick={() => setTime(t)}
-                          className={`py-2 px-1 text-xs font-medium rounded-lg border transition-all ${
-                            time === t 
-                              ? 'bg-primary text-primary-foreground border-primary' 
+                          className={`py-2 px-1 text-xs font-medium rounded-lg border transition-all ${time === t
+                              ? 'bg-primary text-primary-foreground border-primary'
                               : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'
-                          }`}
+                            }`}
                         >
                           {t}
                         </button>
@@ -131,7 +130,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
                     </div>
                   </div>
 
-                  <Button 
+                  <Button
                     className="w-full h-12 gradient-primary rounded-xl"
                     disabled={!date || !time}
                     onClick={() => setStep(2)}
@@ -145,7 +144,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2"><MessageSquare className="w-4 h-4" /> Reason for Visit</Label>
-                    <Textarea 
+                    <Textarea
                       placeholder="Describe your symptoms or reason for the visit..."
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
@@ -155,8 +154,8 @@ export const BookingModal = ({ isOpen, onClose, doctor }: BookingModalProps) => 
 
                   <div className="flex gap-3">
                     <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setStep(1)}>Back</Button>
-                    <Button 
-                      className="flex-[2] h-12 gradient-primary rounded-xl" 
+                    <Button
+                      className="flex-[2] h-12 gradient-primary rounded-xl"
                       disabled={loading}
                       onClick={handleBooking}
                     >

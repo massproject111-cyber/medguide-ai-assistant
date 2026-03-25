@@ -1,3 +1,4 @@
+/// <reference types="@types/deno" />
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
@@ -39,7 +40,7 @@ Deno.serve(async (req: Request) => {
     const genericData = genericRes.ok ? await genericRes.json() : [];
 
     const allData = [...specificData, ...genericData];
-    
+
     // Deduplicate responses by place_id
     const uniqueIds = new Set();
     const places = allData.filter((place: any) => {
@@ -51,10 +52,10 @@ Deno.serve(async (req: Request) => {
     // Parse results into structured doctor entries
     const doctors = places.map((place: any) => {
       // Find the most appropriate name for the place
-      const placeName = place.name || 
-        (place.address?.clinic || place.address?.hospital || place.address?.doctors) || 
+      const placeName = place.name ||
+        (place.address?.clinic || place.address?.hospital || place.address?.doctors) ||
         'Verified Clinic / Medical Center';
-        
+
       const address = place.display_name || '';
 
       return {
@@ -68,8 +69,8 @@ Deno.serve(async (req: Request) => {
 
     const isNearMe = !location || location.toLowerCase().includes('location detected') || location.toLowerCase() === 'me';
     const locText = isNearMe ? "your location" : location;
-    
-    const answer = places.length > 0 
+
+    const answer = places.length > 0
       ? `Found ${places.length} real, verified medical facilities near ${locText} mapped on OpenStreetMap.`
       : `I couldn't find any specific ${specialist.toLowerCase()} clinics listed near ${locText}. Try expanding your search area.`;
 
@@ -89,3 +90,11 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace('www.', '');
+  } catch {
+    return '';
+  }
+}
