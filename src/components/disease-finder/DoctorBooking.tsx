@@ -176,6 +176,25 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
             )}
           </Button>
         </div>
+
+        {/* Quick city chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'].map((city) => (
+            <button
+              key={city}
+              onClick={() => {
+                setLocationInput(city);
+                setLocation(city);
+                searchDoctors(city);
+              }}
+              disabled={isLoading}
+              className="px-3 py-1.5 text-xs font-semibold rounded-full bg-secondary/50 text-foreground hover:bg-primary/10 hover:text-primary border border-border/40 transition-colors disabled:opacity-50"
+            >
+              {city}
+            </button>
+          ))}
+        </div>
+
         <Button
           onClick={handleManualSearch}
           disabled={!locationInput.trim() || isLoading}
