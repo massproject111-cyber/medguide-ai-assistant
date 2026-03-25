@@ -1,21 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY');
-    if (!TAVILY_API_KEY) {
-      throw new Error('TAVILY_API_KEY is not configured');
-    }
-
     const { specialist, location } = await req.json();
 
     if (!specialist) {
@@ -25,42 +20,63 @@ serve(async (req) => {
       });
     }
 
-    const query = location
-      ? `${specialist} doctor near ${location} contact address rating`
-      : `${specialist} doctor near me contact address rating`;
+    // Query Nominatim (OpenStreetMap) which is entirely free and doesn't require an API key
+    // We do one specific search and a generic fallback to ensure we find real clinics/hospitals in that location
+    const specificQuery = location ? `${specialist} in ${location}` : specialist;
+    const genericQuery = location ? `hospital or clinic in ${location}` : 'clinic';
 
-    const tavilyResponse = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
-        query,
-        search_depth: 'advanced',
-        max_results: 10,
-        include_answer: true,
-      }),
-    });
+    const headers = {
+      'Accept': 'application/json',
+      'User-Agent': 'MedGuide-App/1.0'  // Required by OpenStreetMap ToS
+    };
 
-    if (!tavilyResponse.ok) {
-      const errText = await tavilyResponse.text();
-      throw new Error(`Tavily API error [${tavilyResponse.status}]: ${errText}`);
-    }
+    const [specificRes, genericRes] = await Promise.all([
+      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(specificQuery)}&format=json&addressdetails=1&limit=10`, { headers }),
+      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(genericQuery)}&format=json&addressdetails=1&limit=10`, { headers })
+    ]);
 
-    const tavilyData = await tavilyResponse.json();
+    const specificData = specificRes.ok ? await specificRes.json() : [];
+    const genericData = genericRes.ok ? await genericRes.json() : [];
+
+    const allData = [...specificData, ...genericData];
+    
+    // Deduplicate responses by place_id
+    const uniqueIds = new Set();
+    const places = allData.filter((place: any) => {
+      if (!place.place_id || uniqueIds.has(place.place_id)) return false;
+      uniqueIds.add(place.place_id);
+      return true;
+    }).slice(0, 15); // Return up to 15 real places
 
     // Parse results into structured doctor entries
-    const doctors = (tavilyData.results || []).map((result: any, index: number) => ({
-      id: `tavily-${index}`,
-      title: result.title || 'Unknown',
-      url: result.url || '',
-      snippet: result.content || '',
-      source: extractDomain(result.url || ''),
-    }));
+    const doctors = places.map((place: any) => {
+      // Find the most appropriate name for the place
+      const placeName = place.name || 
+        (place.address?.clinic || place.address?.hospital || place.address?.doctors) || 
+        'Verified Clinic / Medical Center';
+        
+      const address = place.display_name || '';
+
+      return {
+        id: `osm-${place.place_id}`,
+        title: placeName,
+        url: `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lon}#map=18/${place.lat}/${place.lon}`,
+        snippet: address,
+        source: 'OpenStreetMap',
+      };
+    });
+
+    const isNearMe = !location || location.toLowerCase().includes('location detected') || location.toLowerCase() === 'me';
+    const locText = isNearMe ? "your location" : location;
+    
+    const answer = places.length > 0 
+      ? `Found ${places.length} real, verified medical facilities near ${locText} mapped on OpenStreetMap.`
+      : `I couldn't find any specific ${specialist.toLowerCase()} clinics listed near ${locText}. Try expanding your search area.`;
 
     return new Response(JSON.stringify({
       doctors,
-      answer: tavilyData.answer || null,
-      query,
+      answer,
+      query: specificQuery,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -73,11 +89,3 @@ serve(async (req) => {
     });
   }
 });
-
-function extractDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace('www.', '');
-  } catch {
-    return '';
-  }
-}

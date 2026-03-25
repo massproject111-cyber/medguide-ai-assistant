@@ -60,12 +60,20 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          // Reverse geocode using a free API
+          // Reverse geocode using Nominatim API (OpenStreetMap)
           const res = await fetch(
-            `https://geocode.maps.co/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
           );
           const geo = await res.json();
-          const city = geo?.address?.city || geo?.address?.town || geo?.address?.state_district || geo?.address?.state || '';
+          
+          const exactParts = [
+            geo?.address?.neighbourhood || geo?.address?.suburb || geo?.address?.residential,
+            geo?.address?.city || geo?.address?.town || geo?.address?.village,
+            geo?.address?.state || geo?.address?.county || geo?.address?.state_district
+          ].filter(Boolean);
+          
+          const city = exactParts.length > 0 ? exactParts.join(', ') : geo?.display_name || '';
+          
           if (city) {
             setLocation(city);
             setLocationInput(city);
@@ -91,7 +99,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
         console.error('Geolocation error:', err);
         toast.error('Could not detect location. Please enter manually.');
       },
-      { timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
