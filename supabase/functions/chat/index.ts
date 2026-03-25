@@ -145,7 +145,7 @@ Return ONLY valid JSON in this exact format, with no markdown formatting around 
     }
   ]
 }
-For 'times', provide an array of specific taking times in 24-hour HH:MM format (e.g. ["09:00"]). If times aren't explicitly mentioned, but frequency is (e.g. twice a day), deduce logical times like ["08:00", "20:00"]. If totally unknown, return empty array [].`
+For 'times', provide an array of specific taking times in 24-hour HH:MM format (e.g. ["09:00"]). ONLY include times that are explicitly written on the prescription. If only a frequency is mentioned (e.g., "twice daily") without specific clock times, return an empty array [] so the user can manually add them. Do NOT deduce logical times.`
       });
     } else if (messages && messages.length > 0) {
       for (const msg of messages) {

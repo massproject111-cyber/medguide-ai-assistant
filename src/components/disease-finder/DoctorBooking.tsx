@@ -13,6 +13,10 @@ interface DoctorResult {
   url: string;
   snippet: string;
   source: string;
+  rating?: number;
+  reviews?: number;
+  distance?: number | null;
+  tier?: string;
 }
 
 interface DoctorBookingProps {
@@ -29,12 +33,16 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const searchDoctors = useCallback(async (loc: string) => {
+  const searchDoctors = useCallback(async (locData: any) => {
     setIsLoading(true);
     setHasSearched(true);
     try {
       const { data, error } = await supabase.functions.invoke('search-doctors', {
-        body: { specialist, location: loc },
+        body: { 
+          specialist, 
+          location: typeof locData === 'string' ? locData : locData.full,
+          locationMetadata: typeof locData === 'string' ? null : locData
+        },
       });
 
       if (error) throw error;
@@ -62,31 +70,44 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
         try {
           // Reverse geocode using Nominatim API (OpenStreetMap)
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`
           );
           const geo = await res.json();
           
           const exactParts = [
+            geo?.address?.house_number,
+            geo?.address?.road,
             geo?.address?.neighbourhood || geo?.address?.suburb || geo?.address?.residential,
             geo?.address?.city || geo?.address?.town || geo?.address?.village,
             geo?.address?.state || geo?.address?.county || geo?.address?.state_district
           ].filter(Boolean);
           
-          const city = exactParts.length > 0 ? exactParts.join(', ') : geo?.display_name || '';
+          const fullLabel = exactParts.length > 0 ? exactParts.join(', ') : geo?.display_name || '';
           
-          if (city) {
-            setLocation(city);
-            setLocationInput(city);
-            searchDoctors(city);
+          const locMetadata = {
+            full: fullLabel,
+            road: geo?.address?.road || '',
+            suburb: geo?.address?.neighbourhood || geo?.address?.suburb || geo?.address?.residential || '',
+            city: geo?.address?.city || geo?.address?.town || geo?.address?.village || '',
+            district: geo?.address?.county || geo?.address?.district || geo?.address?.state_district || '',
+            state: geo?.address?.state || '',
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          };
+          
+          if (fullLabel) {
+            setLocation(fullLabel);
+            setLocationInput(fullLabel);
+            searchDoctors(locMetadata);
           } else {
-            // Fallback: use coordinates as location string
-            const locStr = `latitude ${position.coords.latitude}, longitude ${position.coords.longitude}`;
+            const locStr = `${position.coords.latitude}, ${position.coords.longitude}`;
             setLocation(locStr);
             setLocationInput('Location detected');
             searchDoctors(locStr);
           }
-        } catch {
-          const locStr = `latitude ${position.coords.latitude}, longitude ${position.coords.longitude}`;
+        } catch (error) {
+          console.error('Reverse geocode error:', error);
+          const locStr = `${position.coords.latitude}, ${position.coords.longitude}`;
           setLocation(locStr);
           setLocationInput('Location detected');
           searchDoctors(locStr);
@@ -129,7 +150,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
           <h3 className="font-display text-lg font-bold text-foreground">
             Find a {specialist}
           </h3>
-          <p className="text-sm text-muted-foreground">Powered by live search</p>
+          <p className="text-sm text-muted-foreground">Top-rated medical facilities near you</p>
         </div>
         {onClose && (
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary transition-colors">
@@ -172,14 +193,14 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
         <Button
           onClick={handleManualSearch}
           disabled={!locationInput.trim() || isLoading}
-          className="w-full h-10 rounded-xl gap-2 text-sm font-semibold"
+          className="w-full h-10 rounded-xl gap-2 text-sm font-semibold gradient-primary shadow-glow"
         >
           {isLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Search className="w-4 h-4" />
           )}
-          Search Doctors
+          Find Best Results
         </Button>
       </div>
 
@@ -190,7 +211,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-primary/5 rounded-2xl border border-primary/10"
         >
-          <p className="text-sm text-foreground leading-relaxed">{aiAnswer}</p>
+          <p className="text-sm text-foreground leading-relaxed font-medium capitalize">{aiAnswer}</p>
         </motion.div>
       )}
 
@@ -198,7 +219,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Searching for {specialist}s near {location}...</p>
+          <p className="text-sm text-muted-foreground">Finding top-rated {specialist}s near you...</p>
         </div>
       )}
 
@@ -209,7 +230,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="space-y-3 max-h-[50vh] overflow-y-auto pr-1"
+            className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar"
           >
             {doctors.length > 0 ? (
               doctors.map((doc, i) => (
@@ -219,14 +240,50 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -2 }}
-                  className="p-4 bg-card rounded-2xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all"
+                  className="p-4 bg-card rounded-2xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all relative overflow-hidden"
                 >
+                  {i === 0 && (
+                    <div className="absolute top-0 right-0">
+                      <div className="bg-primary/10 text-primary text-[10px] font-bold px-3 py-1 rounded-bl-xl border-l border-b border-primary/20 flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current" />
+                        Best Match
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-foreground text-sm leading-tight line-clamp-2">{doc.title}</h4>
-                      <Badge variant="secondary" className="mt-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary border-none text-[10px] font-semibold">
-                        {doc.source}
-                      </Badge>
+                      <div className="flex items-center justify-between gap-2 mr-10">
+                        <h4 className="font-bold text-foreground text-sm leading-tight line-clamp-1">{doc.title}</h4>
+                        <div className="flex gap-1 items-center flex-shrink-0">
+                          {doc.distance !== null && (
+                            <span className="text-[10px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded-full border border-primary/10 whitespace-nowrap">
+                              {doc.distance} km
+                            </span>
+                          )}
+                          {doc.tier && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border whitespace-nowrap ${
+                              doc.tier === 'Local' ? 'bg-success/5 text-success border-success/10' :
+                              doc.tier === 'Nearby' ? 'bg-info/5 text-info border-info/10' :
+                              'bg-secondary/50 text-muted-foreground border-border/50'
+                            }`}>
+                              {doc.tier}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Badge variant="secondary" className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border-none text-[10px] font-semibold">
+                          {doc.source}
+                        </Badge>
+                        {doc.rating && (
+                          <div className="flex items-center gap-1 text-warning">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span className="text-[10px] font-bold">{doc.rating}</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">({doc.reviews}+)</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 

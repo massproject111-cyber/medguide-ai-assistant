@@ -83,7 +83,7 @@ const Scan = () => {
           name: med.name,
           dosage: med.dosage,
           frequency: med.frequency,
-          times: med.times && med.times.length > 0 ? med.times : ['08:00'],
+          times: med.times || [],
           stock_count: 30,
         }))
       );
