@@ -36,6 +36,8 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
   const searchDoctors = useCallback(async (locData: any) => {
     setIsLoading(true);
     setHasSearched(true);
+    setDoctors([]);
+    setAiAnswer(null);
     try {
       const { data, error } = await supabase.functions.invoke('search-doctors', {
         body: { 
@@ -46,10 +48,19 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
 
-      setDoctors(data.doctors || []);
-      setAiAnswer(data.answer || null);
+      // Handle case where data might be a string (not auto-parsed)
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+
+      if (parsed.error) throw new Error(parsed.error);
+
+      console.log('Doctor search results:', parsed);
+      setDoctors(parsed.doctors || []);
+      setAiAnswer(parsed.answer || null);
+
+      if ((parsed.doctors || []).length === 0) {
+        toast.info('No doctors found. Try a different location or search online below.');
+      }
     } catch (err) {
       console.error('Search error:', err);
       toast.error('Failed to search for doctors. Please try again.');
@@ -190,6 +201,25 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
             )}
           </Button>
         </div>
+
+        {/* Quick city chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'].map((city) => (
+            <button
+              key={city}
+              onClick={() => {
+                setLocationInput(city);
+                setLocation(city);
+                searchDoctors(city);
+              }}
+              disabled={isLoading}
+              className="px-3 py-1.5 text-xs font-semibold rounded-full bg-secondary/50 text-foreground hover:bg-primary/10 hover:text-primary border border-border/40 transition-colors disabled:opacity-50"
+            >
+              {city}
+            </button>
+          ))}
+        </div>
+
         <Button
           onClick={handleManualSearch}
           disabled={!locationInput.trim() || isLoading}
