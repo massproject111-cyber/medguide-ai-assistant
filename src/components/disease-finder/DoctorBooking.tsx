@@ -204,7 +204,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
 
         {/* Quick city chips */}
         <div className="flex flex-wrap gap-1.5">
-          {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'].map((city) => (
+          {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Kochi'].map((city) => (
             <button
               key={city}
               onClick={() => {
