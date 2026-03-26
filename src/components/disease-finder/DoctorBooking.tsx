@@ -204,7 +204,7 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
 
         {/* Quick city chips */}
         <div className="flex flex-wrap gap-1.5">
-          {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'].map((city) => (
+          {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Kochi'].map((city) => (
             <button
               key={city}
               onClick={() => {
@@ -260,89 +260,95 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar"
+            className="space-y-4 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar"
           >
-            {doctors.length > 0 ? (
-              doctors.map((doc, i) => (
+            {doctors.length > 0 ? (() => {
+              const hospitals = doctors.filter(d => {
+                const t = d.title.toLowerCase();
+                return t.includes('hospital') || t.includes('medical centre') || t.includes('medical center') || t.includes('clinic') || t.includes('healthcare') || t.includes('nursing');
+              });
+              const doctorsList = doctors.filter(d => !hospitals.includes(d));
+
+              const renderCard = (doc: DoctorResult, i: number) => (
                 <motion.div
                   key={doc.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ y: -2 }}
-                  className="p-4 bg-card rounded-2xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all relative overflow-hidden"
+                  transition={{ delay: i * 0.04 }}
+                  className="p-3 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all"
                 >
-                  {i === 0 && (
-                    <div className="absolute top-0 right-0">
-                      <div className="bg-primary/10 text-primary text-[10px] font-bold px-3 py-1 rounded-bl-xl border-l border-b border-primary/20 flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-current" />
-                        Best Match
+                  <h4 className="font-bold text-foreground text-xs leading-tight line-clamp-2 mb-1">{doc.title}</h4>
+                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    {doc.distance !== null && doc.distance !== undefined && (
+                      <span className="text-[10px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded-full border border-primary/10">
+                        {doc.distance} km
+                      </span>
+                    )}
+                    {doc.rating && (
+                      <div className="flex items-center gap-0.5 text-warning">
+                        <Star className="w-2.5 h-2.5 fill-current" />
+                        <span className="text-[10px] font-bold">{doc.rating}</span>
                       </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mr-10">
-                        <h4 className="font-bold text-foreground text-sm leading-tight line-clamp-1">{doc.title}</h4>
-                        <div className="flex gap-1 items-center flex-shrink-0">
-                          {doc.distance !== null && (
-                            <span className="text-[10px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded-full border border-primary/10 whitespace-nowrap">
-                              {doc.distance} km
-                            </span>
-                          )}
-                          {doc.tier && (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border whitespace-nowrap ${
-                              doc.tier === 'Local' ? 'bg-success/5 text-success border-success/10' :
-                              doc.tier === 'Nearby' ? 'bg-info/5 text-info border-info/10' :
-                              'bg-secondary/50 text-muted-foreground border-border/50'
-                            }`}>
-                              {doc.tier}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Badge variant="secondary" className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border-none text-[10px] font-semibold">
-                          {doc.source}
-                        </Badge>
-                        {doc.rating && (
-                          <div className="flex items-center gap-1 text-warning">
-                            <Star className="w-3 h-3 fill-current" />
-                            <span className="text-[10px] font-bold">{doc.rating}</span>
-                            <span className="text-[10px] text-muted-foreground font-normal">({doc.reviews}+)</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
-
-                  <p className="text-xs text-muted-foreground line-clamp-3 mb-3 leading-relaxed">
-                    {doc.snippet}
-                  </p>
-
-                  <div className="flex gap-2">
+                  <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2 leading-relaxed">{doc.snippet}</p>
+                  <div className="flex gap-1.5">
                     <Button
                       size="sm"
                       variant="secondary"
                       onClick={() => window.open(doc.url, '_blank')}
-                      className="flex-1 rounded-xl h-9 gap-1.5 border border-border/50 text-xs font-semibold"
+                      className="flex-1 rounded-lg h-7 gap-1 text-[10px] font-semibold border border-border/50"
                     >
-                      <Globe className="w-3.5 h-3.5" />
-                      View Details
+                      <Globe className="w-3 h-3" />
+                      Details
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.title)}`, '_blank')}
-                      className="flex-1 rounded-xl h-9 gap-1.5 text-xs font-bold"
+                      className="flex-1 rounded-lg h-7 gap-1 text-[10px] font-bold"
                     >
-                      <Navigation className="w-3.5 h-3.5" />
-                      View on Map
+                      <Navigation className="w-3 h-3" />
+                      Map
                     </Button>
                   </div>
                 </motion.div>
-              ))
-            ) : (
+              );
+
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Hospitals Column */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 px-1">
+                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                        <MapPin className="w-3 h-3 text-primary" />
+                      </div>
+                      <h5 className="text-xs font-bold text-foreground">Hospitals</h5>
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full">{hospitals.length}</Badge>
+                    </div>
+                    {hospitals.length > 0 ? (
+                      hospitals.map((doc, i) => renderCard(doc, i))
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground text-center py-4">No hospitals found</p>
+                    )}
+                  </div>
+                  {/* Doctors Column */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 px-1">
+                      <div className="w-5 h-5 rounded-md bg-accent/50 flex items-center justify-center">
+                        <Star className="w-3 h-3 text-primary" />
+                      </div>
+                      <h5 className="text-xs font-bold text-foreground">Doctors</h5>
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full">{doctorsList.length}</Badge>
+                    </div>
+                    {doctorsList.length > 0 ? (
+                      doctorsList.map((doc, i) => renderCard(doc, i))
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground text-center py-4">No doctors found</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })() : (
               <div className="py-12 text-center space-y-3">
                 <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mx-auto">
                   <Search className="w-8 h-8 text-muted-foreground opacity-50" />
