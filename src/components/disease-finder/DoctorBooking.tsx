@@ -1,22 +1,34 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Star, Search, ExternalLink, Loader2, X, Navigation, LocateFixed, Globe } from 'lucide-react';
+import { MapPin, Star, Search, Loader2, X, LocateFixed, Navigation, Building2, UserRound, Phone, Clock, GraduationCap, Languages, BedDouble, Stethoscope, IndianRupee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface HospitalResult {
+  name: string;
+  specialisation: string;
+  address: string;
+  phone: string;
+  rating: number;
+  beds: number;
+  established: string;
+  facilities: string[];
+  mapQuery: string;
+}
+
 interface DoctorResult {
-  id: string;
-  title: string;
-  url: string;
-  snippet: string;
-  source: string;
-  rating?: number;
-  reviews?: number;
-  distance?: number | null;
-  tier?: string;
+  name: string;
+  specialisation: string;
+  qualification: string;
+  experience: string;
+  hospital: string;
+  fee: string;
+  rating: number;
+  languages: string[];
+  mapQuery: string;
 }
 
 interface DoctorBookingProps {
@@ -25,45 +37,39 @@ interface DoctorBookingProps {
 }
 
 export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
-  const [location, setLocation] = useState('');
   const [locationInput, setLocationInput] = useState('');
+  const [hospitals, setHospitals] = useState<HospitalResult[]>([]);
   const [doctors, setDoctors] = useState<DoctorResult[]>([]);
-  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const searchDoctors = useCallback(async (locData: any) => {
+  const searchDoctors = useCallback(async (loc: string) => {
     setIsLoading(true);
     setHasSearched(true);
+    setHospitals([]);
     setDoctors([]);
-    setAiAnswer(null);
+    setSummary(null);
     try {
       const { data, error } = await supabase.functions.invoke('search-doctors', {
-        body: { 
-          specialist, 
-          location: typeof locData === 'string' ? locData : locData.full,
-          locationMetadata: typeof locData === 'string' ? null : locData
-        },
+        body: { specialist, location: loc },
       });
 
       if (error) throw error;
-
-      // Handle case where data might be a string (not auto-parsed)
       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-
       if (parsed.error) throw new Error(parsed.error);
 
-      console.log('Doctor search results:', parsed);
+      setHospitals(parsed.hospitals || []);
       setDoctors(parsed.doctors || []);
-      setAiAnswer(parsed.answer || null);
+      setSummary(parsed.summary || null);
 
-      if ((parsed.doctors || []).length === 0) {
-        toast.info('No doctors found. Try a different location or search online below.');
+      if ((parsed.hospitals || []).length === 0 && (parsed.doctors || []).length === 0) {
+        toast.info('No results found. Try a different location.');
       }
     } catch (err) {
       console.error('Search error:', err);
-      toast.error('Failed to search for doctors. Please try again.');
+      toast.error('Failed to search. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -71,97 +77,46 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
 
   const detectLocation = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation not supported by your browser');
+      toast.error('Geolocation not supported');
       return;
     }
-
     setIsDetecting(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          // Reverse geocode using Nominatim API (OpenStreetMap)
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`
           );
           const geo = await res.json();
-          
-          const exactParts = [
-            geo?.address?.house_number,
-            geo?.address?.road,
-            geo?.address?.neighbourhood || geo?.address?.suburb || geo?.address?.residential,
-            geo?.address?.city || geo?.address?.town || geo?.address?.village,
-            geo?.address?.state || geo?.address?.county || geo?.address?.state_district
-          ].filter(Boolean);
-          
-          const fullLabel = exactParts.length > 0 ? exactParts.join(', ') : geo?.display_name || '';
-          
-          const locMetadata = {
-            full: fullLabel,
-            road: geo?.address?.road || '',
-            suburb: geo?.address?.neighbourhood || geo?.address?.suburb || geo?.address?.residential || '',
-            city: geo?.address?.city || geo?.address?.town || geo?.address?.village || '',
-            district: geo?.address?.county || geo?.address?.district || geo?.address?.state_district || '',
-            state: geo?.address?.state || '',
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          };
-          
-          if (fullLabel) {
-            setLocation(fullLabel);
-            setLocationInput(fullLabel);
-            searchDoctors(locMetadata);
-          } else {
-            const locStr = `${position.coords.latitude}, ${position.coords.longitude}`;
-            setLocation(locStr);
-            setLocationInput('Location detected');
-            searchDoctors(locStr);
-          }
-        } catch (error) {
-          console.error('Reverse geocode error:', error);
-          const locStr = `${position.coords.latitude}, ${position.coords.longitude}`;
-          setLocation(locStr);
-          setLocationInput('Location detected');
-          searchDoctors(locStr);
+          const city = geo?.address?.city || geo?.address?.town || geo?.address?.village || geo?.display_name || '';
+          setLocationInput(city);
+          searchDoctors(city);
+        } catch {
+          toast.error('Could not detect location');
         } finally {
           setIsDetecting(false);
         }
       },
-      (err) => {
+      () => {
         setIsDetecting(false);
-        console.error('Geolocation error:', err);
-        toast.error('Could not detect location. Please enter manually.');
+        toast.error('Location access denied. Enter manually.');
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
   const handleManualSearch = () => {
-    if (!locationInput.trim()) {
-      toast.error('Please enter a location');
-      return;
-    }
-    setLocation(locationInput.trim());
+    if (!locationInput.trim()) { toast.error('Please enter a location'); return; }
     searchDoctors(locationInput.trim());
   };
 
-  const openGoogleSearch = () => {
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(`${specialist} doctor near ${location || 'me'}`)}`, '_blank');
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="space-y-4"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-lg font-bold text-foreground">
-            Find a {specialist}
-          </h3>
-          <p className="text-sm text-muted-foreground">Top-rated medical facilities near you</p>
+          <h3 className="font-display text-lg font-bold text-foreground">Find a {specialist}</h3>
+          <p className="text-sm text-muted-foreground">Hospitals & doctors near you</p>
         </div>
         {onClose && (
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary transition-colors">
@@ -177,71 +132,41 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
           Your Location
         </label>
         <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Input
-              value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              placeholder="Enter city or area (e.g. Mumbai, Delhi)"
-              className="h-11 rounded-xl bg-secondary/30 pr-10"
-              onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={detectLocation}
-            disabled={isDetecting}
-            className="h-11 w-11 rounded-xl border-primary/20 hover:bg-primary/5 shrink-0"
-            title="Detect my location"
-          >
-            {isDetecting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            ) : (
-              <LocateFixed className="w-4 h-4 text-primary" />
-            )}
+          <Input
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            placeholder="Enter city (e.g. Mumbai, Delhi)"
+            className="h-11 rounded-xl bg-secondary/30 flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+          />
+          <Button variant="outline" size="icon" onClick={detectLocation} disabled={isDetecting}
+            className="h-11 w-11 rounded-xl border-primary/20 hover:bg-primary/5 shrink-0" title="Detect my location">
+            {isDetecting ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <LocateFixed className="w-4 h-4 text-primary" />}
           </Button>
         </div>
 
-        {/* Quick city chips */}
+        {/* City chips */}
         <div className="flex flex-wrap gap-1.5">
           {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Kochi'].map((city) => (
-            <button
-              key={city}
-              onClick={() => {
-                setLocationInput(city);
-                setLocation(city);
-                searchDoctors(city);
-              }}
-              disabled={isLoading}
-              className="px-3 py-1.5 text-xs font-semibold rounded-full bg-secondary/50 text-foreground hover:bg-primary/10 hover:text-primary border border-border/40 transition-colors disabled:opacity-50"
-            >
+            <button key={city} onClick={() => { setLocationInput(city); searchDoctors(city); }} disabled={isLoading}
+              className="px-3 py-1.5 text-xs font-semibold rounded-full bg-secondary/50 text-foreground hover:bg-primary/10 hover:text-primary border border-border/40 transition-colors disabled:opacity-50">
               {city}
             </button>
           ))}
         </div>
 
-        <Button
-          onClick={handleManualSearch}
-          disabled={!locationInput.trim() || isLoading}
-          className="w-full h-10 rounded-xl gap-2 text-sm font-semibold gradient-primary shadow-glow"
-        >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Search className="w-4 h-4" />
-          )}
+        <Button onClick={handleManualSearch} disabled={!locationInput.trim() || isLoading}
+          className="w-full h-10 rounded-xl gap-2 text-sm font-semibold gradient-primary shadow-glow">
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           Find Best Results
         </Button>
       </div>
 
-      {/* AI Answer Summary */}
-      {aiAnswer && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-primary/5 rounded-2xl border border-primary/10"
-        >
-          <p className="text-sm text-foreground leading-relaxed font-medium capitalize">{aiAnswer}</p>
+      {/* Summary */}
+      {summary && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-primary/5 rounded-2xl border border-primary/10">
+          <p className="text-sm text-foreground leading-relaxed font-medium">{summary}</p>
         </motion.div>
       )}
 
@@ -249,134 +174,125 @@ export const DoctorBooking = ({ specialist, onClose }: DoctorBookingProps) => {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Finding top-rated {specialist}s near you...</p>
+          <p className="text-sm text-muted-foreground">Finding {specialist}s near you...</p>
         </div>
       )}
 
       {/* Results */}
       {!isLoading && hasSearched && (
         <AnimatePresence mode="wait">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="space-y-4 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar"
-          >
-            {doctors.length > 0 ? (() => {
-              const hospitals = doctors.filter(d => {
-                const t = d.title.toLowerCase();
-                return t.includes('hospital') || t.includes('medical centre') || t.includes('medical center') || t.includes('clinic') || t.includes('healthcare') || t.includes('nursing');
-              });
-              const doctorsList = doctors.filter(d => !hospitals.includes(d));
-
-              const renderCard = (doc: DoctorResult, i: number) => (
-                <motion.div
-                  key={doc.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="p-3 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all"
-                >
-                  <h4 className="font-bold text-foreground text-xs leading-tight line-clamp-2 mb-1">{doc.title}</h4>
-                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                    {doc.distance !== null && doc.distance !== undefined && (
-                      <span className="text-[10px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded-full border border-primary/10">
-                        {doc.distance} km
-                      </span>
-                    )}
-                    {doc.rating && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-h-[55vh] overflow-y-auto pr-1 custom-scrollbar">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Hospitals Column */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 px-1">
+                  <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-3 h-3 text-primary" />
+                  </div>
+                  <h5 className="text-xs font-bold text-foreground">Hospitals</h5>
+                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full">{hospitals.length}</Badge>
+                </div>
+                {hospitals.length > 0 ? hospitals.map((h, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="p-3 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all space-y-1.5">
+                    <h4 className="font-bold text-foreground text-xs leading-tight line-clamp-2">{h.name}</h4>
+                    <div className="flex items-center gap-1 text-primary">
+                      <Stethoscope className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-semibold">{h.specialisation}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <div className="flex items-center gap-0.5 text-warning">
                         <Star className="w-2.5 h-2.5 fill-current" />
-                        <span className="text-[10px] font-bold">{doc.rating}</span>
+                        <span className="text-[10px] font-bold">{h.rating}</span>
                       </div>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2 leading-relaxed">{doc.snippet}</p>
-                  <div className="flex gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => window.open(doc.url, '_blank')}
-                      className="flex-1 rounded-lg h-7 gap-1 text-[10px] font-semibold border border-border/50"
-                    >
-                      <Globe className="w-3 h-3" />
-                      Details
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.title)}`, '_blank')}
-                      className="flex-1 rounded-lg h-7 gap-1 text-[10px] font-bold"
-                    >
-                      <Navigation className="w-3 h-3" />
-                      Map
-                    </Button>
-                  </div>
-                </motion.div>
-              );
-
-              return (
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Hospitals Column */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 px-1">
-                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
-                        <MapPin className="w-3 h-3 text-primary" />
-                      </div>
-                      <h5 className="text-xs font-bold text-foreground">Hospitals</h5>
-                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full">{hospitals.length}</Badge>
+                      {h.beds > 0 && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <BedDouble className="w-2.5 h-2.5" /> {h.beds} beds
+                        </span>
+                      )}
                     </div>
-                    {hospitals.length > 0 ? (
-                      hospitals.map((doc, i) => renderCard(doc, i))
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground text-center py-4">No hospitals found</p>
+                    {h.established && (
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="w-2.5 h-2.5" /> Est. {h.established}
+                      </p>
                     )}
-                  </div>
-                  {/* Doctors Column */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 px-1">
-                      <div className="w-5 h-5 rounded-md bg-accent/50 flex items-center justify-center">
-                        <Star className="w-3 h-3 text-primary" />
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">{h.address}</p>
+                    {h.phone && h.phone !== 'N/A' && (
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Phone className="w-2.5 h-2.5" /> {h.phone}
+                      </p>
+                    )}
+                    {h.facilities?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {h.facilities.slice(0, 3).map((f, fi) => (
+                          <span key={fi} className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary/60 text-muted-foreground">{f}</span>
+                        ))}
                       </div>
-                      <h5 className="text-xs font-bold text-foreground">Doctors</h5>
-                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full">{doctorsList.length}</Badge>
-                    </div>
-                    {doctorsList.length > 0 ? (
-                      doctorsList.map((doc, i) => renderCard(doc, i))
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground text-center py-4">No doctors found</p>
                     )}
-                  </div>
-                </div>
-              );
-            })() : (
-              <div className="py-12 text-center space-y-3">
-                <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mx-auto">
-                  <Search className="w-8 h-8 text-muted-foreground opacity-50" />
-                </div>
-                <p className="text-muted-foreground font-medium text-sm">No results found for "{specialist}" near "{location}"</p>
-                <p className="text-xs text-muted-foreground">Try a different location or search online</p>
+                    <Button size="sm" onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(h.mapQuery || h.name)}`, '_blank')}
+                      className="w-full rounded-lg h-7 gap-1 text-[10px] font-bold mt-1">
+                      <Navigation className="w-3 h-3" /> View on Map
+                    </Button>
+                  </motion.div>
+                )) : (
+                  <p className="text-[10px] text-muted-foreground text-center py-4">No hospitals found</p>
+                )}
               </div>
-            )}
+
+              {/* Doctors Column */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 px-1">
+                  <div className="w-5 h-5 rounded-md bg-accent/50 flex items-center justify-center">
+                    <UserRound className="w-3 h-3 text-primary" />
+                  </div>
+                  <h5 className="text-xs font-bold text-foreground">Doctors</h5>
+                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full">{doctors.length}</Badge>
+                </div>
+                {doctors.length > 0 ? doctors.map((d, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="p-3 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all space-y-1.5">
+                    <h4 className="font-bold text-foreground text-xs leading-tight line-clamp-2">{d.name}</h4>
+                    <div className="flex items-center gap-1 text-primary">
+                      <Stethoscope className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-semibold">{d.specialisation}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-0.5 text-warning">
+                        <Star className="w-2.5 h-2.5 fill-current" />
+                        <span className="text-[10px] font-bold">{d.rating}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="w-2.5 h-2.5" /> {d.experience}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <GraduationCap className="w-2.5 h-2.5" /> {d.qualification}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <Building2 className="w-2.5 h-2.5" /> {d.hospital}
+                    </p>
+                    {d.fee && (
+                      <p className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
+                        <IndianRupee className="w-2.5 h-2.5" /> {d.fee}
+                      </p>
+                    )}
+                    {d.languages?.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Languages className="w-2.5 h-2.5" /> {d.languages.join(', ')}
+                      </p>
+                    )}
+                    <Button size="sm" onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(d.mapQuery || d.name)}`, '_blank')}
+                      className="w-full rounded-lg h-7 gap-1 text-[10px] font-bold mt-1">
+                      <Navigation className="w-3 h-3" /> View on Map
+                    </Button>
+                  </motion.div>
+                )) : (
+                  <p className="text-[10px] text-muted-foreground text-center py-4">No doctors found</p>
+                )}
+              </div>
+            </div>
           </motion.div>
         </AnimatePresence>
-      )}
-
-      {/* External search CTA */}
-      {hasSearched && !isLoading && (
-        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-3">
-          <p className="text-sm font-semibold text-foreground text-center">Find more {specialist}s online</p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openGoogleSearch}
-              className="flex-1 rounded-xl h-10 gap-1.5 border-primary/20 hover:bg-primary/5 text-primary font-semibold text-xs"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Google Search
-            </Button>
-          </div>
-        </div>
       )}
     </motion.div>
   );

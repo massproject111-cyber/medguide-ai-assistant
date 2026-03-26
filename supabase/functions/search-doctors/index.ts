@@ -7,13 +7,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { specialist, location, locationMetadata } = await req.json();
+    const { specialist, location } = await req.json();
 
     if (!specialist) {
       return new Response(JSON.stringify({ error: 'specialist is required' }), {
@@ -22,114 +24,93 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const headers = {
-      'Accept': 'application/json',
-      'User-Agent': 'MedGuide-App/1.0'
-    };
-
-    const tiers = [];
-    if (locationMetadata) {
-      const { road, suburb, city, district, state } = locationMetadata;
-      
-      // Tier 1: Very Local
-      if (road || suburb) {
-        const localArea = [road, suburb, city].filter(Boolean).join(', ');
-        tiers.push({ name: 'Local', query: `${specialist} in ${localArea}` });
-      }
-      
-      // Tier 2: City/Town
-      if (city) {
-        tiers.push({ name: 'Nearby', query: `${specialist} in ${city}` });
-      }
-      
-      // Tier 3: District/County
-      if (district && district !== city) {
-        tiers.push({ name: 'District', query: `${specialist} in ${district}` });
-      }
-      
-      // Tier 4: State
-      if (state) {
-        tiers.push({ name: 'State', query: `${specialist} in ${state}` });
-      }
-    } else if (location) {
-      tiers.push({ name: 'Manual', query: `${specialist} in ${location}` });
-      tiers.push({ name: 'Generic', query: `hospital in ${location}` });
-    } else {
-      tiers.push({ name: 'Generic', query: specialist });
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Limit to 4 parallel requests max to avoid overwhelming Nominatim
-    const activeTiers = tiers.slice(0, 4);
-    const searchPromises = activeTiers.map(tier => 
-      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(tier.query)}&format=json&addressdetails=1&limit=5`, { headers })
-        .then(res => res.ok ? res.json().then(data => data.map((d: any) => ({ ...d, tier: tier.name }))) : [])
-        .catch(() => [])
-    );
+    const locText = location || "India";
 
-    const results = await Promise.all(searchPromises);
-    const allData = results.flat();
+    const prompt = `You are a medical directory assistant. Return a JSON object with real, well-known hospitals and doctors for the specialty "${specialist}" in/near "${locText}".
 
-    // Deduplicate by place_id
-    const uniqueIds = new Set();
-    let doctors = allData
-      .filter((place: any) => {
-        if (!place.place_id || uniqueIds.has(place.place_id)) return false;
-        uniqueIds.add(place.place_id);
-        return true;
-      })
-      .map((place: any) => {
-        const placeName = place.name || 
-          (place.address?.clinic || place.address?.hospital || place.address?.doctors || place.address?.health) || 
-          'Medical Facility';
+Return EXACTLY this JSON structure (no markdown, no explanation, just raw JSON):
+{
+  "hospitals": [
+    {
+      "name": "Hospital Name",
+      "specialisation": "Department/Specialisation",
+      "address": "Full address",
+      "phone": "Phone number or N/A",
+      "rating": 4.5,
+      "beds": 200,
+      "established": "1990",
+      "facilities": ["ICU", "Emergency", "Pharmacy"],
+      "mapQuery": "Hospital Name City"
+    }
+  ],
+  "doctors": [
+    {
+      "name": "Dr. Full Name",
+      "specialisation": "Exact specialisation",
+      "qualification": "MBBS, MD, etc.",
+      "experience": "15 years",
+      "hospital": "Hospital they practice at",
+      "fee": "₹500-₹1000",
+      "rating": 4.3,
+      "languages": ["English", "Hindi"],
+      "mapQuery": "Doctor Name Hospital City"
+    }
+  ],
+  "summary": "Brief summary of medical facilities available"
+}
 
-        const address = place.display_name || '';
-        const rawImportance = place.importance || 0.4;
-        const rating = Math.min(5.0, Math.max(3.5, 3.5 + (rawImportance * 1.5))).toFixed(1);
-        const reviews = (parseInt(place.place_id) % 150) + 10;
+Rules:
+- Return 4-6 hospitals and 4-6 doctors
+- Use REAL well-known hospitals and doctors from that area if possible
+- Include accurate specialisations relevant to "${specialist}"
+- Ratings between 3.5-5.0
+- All data should be realistic and helpful
+- Return ONLY valid JSON, no markdown code blocks`;
 
-        // Calculate distance if metadata provided
-        let distanceKms = null;
-        if (locationMetadata?.lat && locationMetadata?.lon && place.lat && place.lon) {
-          distanceKms = calculateDistance(
-            locationMetadata.lat, 
-            locationMetadata.lon, 
-            parseFloat(place.lat), 
-            parseFloat(place.lon)
-          );
-        }
-
-        return {
-          id: `osm-${place.place_id}`,
-          title: placeName,
-          url: `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lon}#map=18/${place.lat}/${place.lon}`,
-          snippet: address,
-          source: 'OpenStreetMap',
-          rating: parseFloat(rating),
-          reviews: reviews,
-          importance: rawImportance,
-          tier: place.tier,
-          distance: distanceKms ? parseFloat(distanceKms.toFixed(1)) : null
-        };
-      });
-
-    // Sort by proximity first, then by quality (tier + importance)
-    doctors.sort((a, b) => {
-      if (a.distance !== null && b.distance !== null) {
-        return a.distance - b.distance;
-      }
-      return b.importance - a.importance;
+    const aiResponse = await fetch(AI_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 3000,
+      }),
     });
 
-    const isNearMe = !location || location.toLowerCase().includes('location detected') || location.toLowerCase() === 'me';
-    const locText = locationMetadata?.suburb || locationMetadata?.city || location || "your area";
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("AI Gateway error:", aiResponse.status, errText);
+      throw new Error(`AI Gateway error: ${aiResponse.status}`);
+    }
 
-    const answer = doctors.length > 0
-      ? `Successfully located ${doctors.length} qualified ${specialist.toLowerCase()} facilities by searching across your local area, city, and district. Results are prioritized by proximity to ${locText}.`
-      : `I searched extensively across your local area, district, and state, but couldn't find any specific ${specialist.toLowerCase()} facilities. Try a broader term or check your location settings.`;
+    const aiData = await aiResponse.json();
+    const content = aiData.choices?.[0]?.message?.content || "";
+    
+    // Parse JSON from AI response (handle possible markdown wrapping)
+    let parsed;
+    try {
+      const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsed = JSON.parse(jsonStr);
+    } catch (e) {
+      console.error("Failed to parse AI response:", content);
+      throw new Error("Failed to parse AI response");
+    }
 
     return new Response(JSON.stringify({
-      doctors: doctors.slice(0, 20),
-      answer,
+      hospitals: parsed.hospitals || [],
+      doctors: parsed.doctors || [],
+      summary: parsed.summary || `Found medical facilities for ${specialist} in ${locText}`,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -141,24 +122,3 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
-
-// Haversine formula for distance calculation
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function extractDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace('www.', '');
-  } catch {
-    return '';
-  }
-}
