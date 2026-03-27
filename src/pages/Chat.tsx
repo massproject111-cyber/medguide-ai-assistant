@@ -1,13 +1,16 @@
 /* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Bot, User, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Send, User, Sparkles, ChevronDown, ChevronUp, Stethoscope } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { streamChat, type AIMessage, type ChatContext } from '@/lib/ai-service';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { DoctorBooking } from '@/components/disease-finder/DoctorBooking';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessage {
   id: string;
@@ -15,12 +18,14 @@ interface ChatMessage {
   content: string;
   reasoning?: string[];
   timestamp: Date;
+  suggestsDoctor?: boolean;
 }
 
 const Chat = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [showDoctorBooking, setShowDoctorBooking] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [expandedReasoning, setExpandedReasoning] = useState<Set<string>>(new Set());
@@ -36,22 +41,20 @@ const Chat = () => {
 
   const loadHealthContext = async () => {
     if (!user) return;
-    
-    // Load profile
+
     const { data: profileData } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', user.id)
       .single();
-    
+
     if (profileData) setUserProfile(profileData);
 
-    // Load medications
     const { data: medsData } = await supabase
       .from('medications')
       .select('*')
       .eq('user_id', user.id);
-    
+
     if (medsData) setMedications(medsData);
   };
 
@@ -90,7 +93,6 @@ const Chat = () => {
     setInput('');
     setIsLoading(true);
 
-    // Create empty assistant message for streaming
     setMessages(prev => [...prev, {
       id: assistantId,
       role: 'assistant',
@@ -106,6 +108,7 @@ const Chat = () => {
       chatMessages.push({ role: 'user', content: userInput });
 
       let streamedContent = '';
+      let hadError = false;
 
       const chatContext: ChatContext = {
         age: userProfile?.age,
@@ -130,18 +133,35 @@ const Chat = () => {
           );
         },
         onDone: () => {},
-        onError: (err) => { throw new Error(err); },
+        onError: (errMsg) => {
+          hadError = true;
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantId
+                ? { ...m, content: errMsg }
+                : m
+            )
+          );
+          setIsLoading(false);
+        },
       });
 
-      // Parse reasoning after stream completes
+      // Skip post-processing if an error was already handled above
+      if (hadError) return;
+
       const { cleanContent, reasoning } = extractReasoning(streamedContent);
-      setMessages(prev => 
-        prev.map(m => 
-          m.id === assistantId 
-            ? { 
-                ...m, 
-                content: cleanContent || streamedContent,
-                reasoning: reasoning.length > 0 ? reasoning : undefined 
+      const suggestsDoctorMatch = cleanContent || streamedContent;
+      const suggestsDoctorRegex = /doctor|specialist|hospital|physician|clinic|surgeon/i;
+      const suggestsDoctor = suggestsDoctorRegex.test(suggestsDoctorMatch);
+
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: suggestsDoctorMatch,
+                reasoning: reasoning.length > 0 ? reasoning : undefined,
+                suggestsDoctor
               }
             : m
         )
@@ -153,9 +173,9 @@ const Chat = () => {
       } else if (typeof error === 'object' && error !== null && 'message' in error) {
         errorMessage = String((error as Record<string, unknown>).message);
       }
-      setMessages(prev => 
-        prev.map(m => 
-          m.id === assistantId 
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantId
             ? { ...m, content: errorMessage }
             : m
         )
@@ -175,9 +195,20 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border/50">
+    /**
+     * Layout strategy:
+     * - `h-[calc(100vh-5rem)]` = full viewport minus BottomNav (5rem = 80px = h-20).
+     *   Layout.tsx gives main a `pb-20` and BottomNav is fixed at bottom-0.
+     * - flex flex-col keeps header + messages + input in a column.
+     * - messages section: `flex-1 overflow-y-auto` scrolls independently.
+     * - input bar: normal flow at the bottom of the column, NOT sticky/fixed,
+     *   so it always sits right above the BottomNav.
+     */
+    <>
+    <div className="relative flex flex-col h-[calc(100vh-5rem)] bg-background">
+
+      {/* ── Header ─────────────────────────────────────────── */}
+      <header className="shrink-0 z-10 glass border-b border-border/50">
         <div className="container max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <motion.button
@@ -195,14 +226,16 @@ const Chat = () => {
                 AI Health Assistant
               </p>
             </div>
-            <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center shadow-glow shrink-0">
-              <Bot className="w-5 h-5 text-primary-foreground" />
+            <div className="flex items-center justify-center shrink-0">
+              <Button size="sm" variant="outline" onClick={() => setShowDoctorBooking(true)} className="text-xs font-bold text-primary gap-1.5 rounded-xl border-primary/20 bg-primary/5 hover:bg-primary/10">
+                <Stethoscope className="w-3.5 h-3.5" /> Find Care
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Messages */}
+      {/* ── Messages (scrollable) ───────────────────────────── */}
       <main className="flex-1 overflow-y-auto pb-32">
         <div className="container max-w-lg mx-auto px-4 py-6 space-y-4">
 
@@ -239,7 +272,7 @@ const Chat = () => {
                   {message.role === 'user' ? (
                     <User className="w-4 h-4 text-primary-foreground" />
                   ) : (
-                    <Bot className="w-4 h-4 text-foreground" />
+                    <span className="text-[10px] font-black font-display text-primary">AI</span>
                   )}
                 </div>
                 <div
@@ -294,9 +327,34 @@ const Chat = () => {
                         </AnimatePresence>
                       </div>
                     )}
-                    <div className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
-                      {message.content}
+                    <div className="text-sm font-medium leading-relaxed">
+                      {message.role === 'user' ? (
+                        <div className="whitespace-pre-wrap">{message.content}</div>
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none 
+                            prose-p:leading-relaxed prose-p:mb-2 last:prose-p:mb-0
+                            prose-headings:text-foreground prose-headings:font-bold prose-headings:mb-2
+                            prose-ul:my-2 prose-li:my-0.5
+                            prose-strong:text-primary prose-strong:font-bold">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                     </div>
+                    {message.suggestsDoctor && message.role === 'assistant' && (
+                      <div className="mt-3 pt-3 border-t border-primary/10">
+                        <Button 
+                          onClick={() => setShowDoctorBooking(true)} 
+                          variant="secondary" 
+                          size="sm" 
+                          className="w-full gap-2 text-primary font-bold shadow-sm"
+                        >
+                          <Stethoscope className="w-4 h-4" />
+                          Find Doctors & Hospitals near you
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <p className={`text-[10px] font-bold mt-1.5 px-1 uppercase tracking-tighter ${message.role === 'user' ? 'text-muted-foreground/60 mr-1' : 'text-muted-foreground/60 ml-1'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -313,7 +371,7 @@ const Chat = () => {
               className="flex gap-3"
             >
               <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center">
-                <Bot className="w-4 h-4 text-foreground" />
+                <span className="text-[10px] font-black font-display text-primary">AI</span>
               </div>
               <div className="bg-card border border-border/50 shadow-card rounded-2xl rounded-tl-md p-4">
                 <div className="flex gap-1">
@@ -329,8 +387,8 @@ const Chat = () => {
         </div>
       </main>
 
-      {/* Input */}
-      <div className="sticky bottom-16 glass border-t border-border/50 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+      {/* ── Input bar (fixed at bottom) ─────── */}
+      <div className="fixed bottom-20 left-0 right-0 z-40 glass border-t border-border/50 px-4 py-3 shadow-[0_-8px_30px_-10px_rgba(0,0,0,0.08)] bg-background/80 backdrop-blur-md">
         <div className="container max-w-lg mx-auto">
           <form
             onSubmit={e => {
@@ -354,13 +412,34 @@ const Chat = () => {
               <Send className="w-5 h-5 text-primary-foreground ml-0.5" />
             </Button>
           </form>
-          <p className="text-[10px] font-bold text-muted-foreground/50 text-center mt-3 flex items-center justify-center gap-1.5">
-            <Bot className="w-3 h-3" />
+          <p className="text-[10px] font-bold text-muted-foreground/50 text-center mt-2 flex items-center justify-center gap-1.5">
+            <Sparkles className="w-3 h-3" />
             VIRTUAL ASSISTANT • NOT FOR EMERGENCIES
           </p>
         </div>
       </div>
+
     </div>
+
+    {/* Doctor Booking Overlay */}
+    <AnimatePresence>
+      {showDoctorBooking && (
+        <motion.div
+          initial={{ opacity: 0, y: '100%' }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: '100%' }}
+          className="fixed inset-0 z-[100] bg-background overflow-y-auto"
+        >
+          <div className="p-4 md:p-6 pb-24">
+            <DoctorBooking 
+              specialist="Specialist" 
+              onClose={() => setShowDoctorBooking(false)} 
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 };
 

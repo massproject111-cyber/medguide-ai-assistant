@@ -40,7 +40,9 @@ export interface PrescriptionData {
     name: string;
     dosage: string;
     frequency: string;
+    timesPerDay?: number;
     time?: string;
+    duration?: string;
     instructions?: string;
   }[];
 }
